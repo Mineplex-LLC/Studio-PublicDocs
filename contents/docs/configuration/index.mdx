@@ -1,49 +1,62 @@
 ---
-title: Game Configuration
-description: How to adjust your game configuration in `game-properties.yaml`
+title: Project Configuration
+description: How to adjust your project configuration
 ---
 
-# Adjusting Game Properties
-All Studio projects have an auto-generated file in the `config/game-properties.yaml` path.
+## Adjusting Game Properties
+In order to configure your project, we provide a file! This allows you to change your project's behaviour.
 
-While there are certain fields in this file that you cannot change (such as the `projectId` attribute), you may wish to adjust other portions of the configuration to customize your game's matchmaking, server allocation strategy, and more.
+All Studio projects have an auto-generated file, see below for the file structure.
+<FileTree>
+  <Folder name="config" label="config">
+    <File name="game-properties.yaml" label="game-properties.yaml" />
+  </Folder>
+</FileTree>
 
-Some of the properties you can adjust are:
-- `namespaceId`: (string) this is a mandatory user-specified identifier that can be used to share products and data between games. If you wish to share data (including player stats, purchases, leaderboard rankings, and more) between multiple Studio projects, you should sync this attribute. This field is internal, and is not visible within your game. 
-- `game.name`: (string) this attribute defines the name of your game as shown to players on the Mineplex network.
-- `matchmaker.allocationMode`: (`STATIC` or `DYNAMIC`) defines the mechanism by which your game servers are allocated. Details on this are provided below. After your game is published for the first time, this cannot be changed unless you reach out to us in a support request.
-- `matchmaker.minPlayers`: the minimum number of players required for your game to be playable.
-- `matchmaker.maxPlayers`: the maximum number of players allowed on a single server for your game.
-- `matchmaker.allowPlayerBackfill`: determines if players should be allowed to join an instance of your game that is already running
-
-## Matchmaking and Game Allocation
-If you choose the `STATIC` mode:
-- Your game will be allocated as a set of stateful containers. You can specify an additional property for the maximum number of containers (maxInstanceCount) and we will automatically provision additional servers based on the actual player load over time, up to that maximum count.
-- In a static mode, players can queue for a specific instance of your game. For example, Clans-1, Clans-2, and so on. 
-Your code should not make any assumptions about the actual number of servers at any given time. If there are no players on Clans-2, we may deallocate that instance until someone re-queues for Clans-2, at which point the server will be re-allocated (with its state restored). 
-- We reserve the right to restart containers as needed, but will fire off an event to your game before doing so. For example, if we need to restart Clans-2 to apply a code update that you published, our orchestration server will give your game a grace period to shut down before it is automatically restarted. This will be very similar to a SIGTERM and SIGKILL lifecycle in a process -- the game gets a warning first, giving it a chance to gracefully handle a shutdown, and then it is forcefully shut down at some point in the future. Our systems will make a best-effort attempt to avoid restarting instances with active players, and we will work on exposing the grace period as a parameter to you. We are still figuring out the best way to handle this case, but want for you to plan in advance for it.
-
-If you choose the `DYNAMIC` mode:
-- Your game will be allocated on-demand in response to matchmaking and queuing events. For example, if your game requires four players to begin, and eight players enter the queue, two instances of the game will be created automatically by our matchmaking and orchestration systems behind the scenes. These players are also transferred automatically once your game enters a healthy state as per our SDK lifecycle management.
-- In a dynamic mode, players queue for your game mode itself, and are allocated to game instances as they become available. For example, players may queue for SSM and end up being assigned to any number of different servers, as per our orchestration logic.
-- Your game must interact with our lifecycle SDK to indicate when it is safe or unsafe to shut down the game. This is usually between minigame iterations. Our systems make a best-effort attempt to keep the container alive, and may add more players during this time (it's like a game lobby window). However, in some cases (such as if insufficient players are in the game mode), the container may be shut down. Once again, we will deliver a shutdown event and a grace period in case you want to re-queue players for another mode or lobby before the container is killed. Otherwise, players are sent back to the Mineplex hub.
-
-## External Plugins
-If you need to provide additional plugins for your game server, you can create an `external-plugins/` directory in your project root and place them there. This directory will be recursively merged with the `plugins/` directory in your game server (which contains a default set of Mineplex-vended plugins and your game code).
-
-Note that any plugins provided must run in offline mode, as game containers do not have network connectivity. All external plugins will also be subject to a security, operational readiness, and license review by the Mineplex team before your game can be published.
-
-## Enabling Mineplex BOM Dependencies
-Mineplex has partnered with a number of leading plugin authors to support unique and innovative game experiences within the Studio. These plugins can be enabled using the `dependencies.libraries` configuration property within the `game-properties.yaml` file. 
-
-Some of the values that are currently supported (for Organization Studio accounts only) are:
-- `MYTHIC_MOBS`: This plugin allows you to create custom mobs with unique abilities and behaviors.
-- `MODEL_ENGINE`: This plugin allows you to create custom models for mobs, items, and blocks.
-- `MYTHIC_DUNGEONS`: This plugin allows you to create custom dungeons with unique mobs, loot, and mechanics.
-- `MYTHIC_CRUCIBLE`: This plugin allows you to create custom PvP arenas with unique mechanics and objectives.
-
-Multiple values should be specified in an array. For example:
+## Example Properties File
 ```yaml
+# DO NOT EDIT: this project ID is unique to your repository and should not be changed
+projectId: 6546c318242da444451434bd
+
+# This is a mandatory user-specified identifier that can be used to share products and data between games.
+# If you wish to share data (including player stats, purchases, leaderboard rankings, and more) between multiple Studio projects, 
+# you should sync this attribute. This field is internal, and is not visible within your game. 
+namespaceId: MineplexStudio 
+
+game:
+  # a name given to your game
+  name: MicroBattles 
+  # The visibility of your game. Options: HIDDEN, PLAYTEST, PUBLIC
+  visibility: PUBLIC 
+  # A multiline description for your game
+  description: ["§fBe the §eLast Team §fstanding", "§fThe §bGlass Barrier §fwill disappear after §c10 seconds"] 
+  # The item to be displayed in the game explorer
+  iconItem: "minecraft:beacon"
+  # A category for your game
+  category: "PvP"
+  # Any tags you'd like to add to your game
+  tags: [ "Team", "Strategy" ]
+  # The display name of your game in the lobby menu
+  displayName: "Micro Battles"
+  # supported Minecraft platforms
+  supportedPlatforms:
+    - JAVA
+    - BEDROCK
+
+# matchaker configuration
+matchmaker:
+  # an allocation mode (See details below)
+  allocationMode: DYNAMIC 
+  # Only can be set when allocationMode is STATIC
+  maxReplicas: 4 
+  # The minimum players for an instance (server) to start up
+  minPlayers: 2
+  # The maximum amount of players an instance of your game holds
+  maxPlayers: 16
+  # Determines if players should be allowed to join an instance of your game that is already running
+  allowPlayerBackfill: false
+
+# any mineplex provided dependencies you'd like to add - requires Organization account
 dependencies:
   libraries:
     - MYTHIC_MOBS
@@ -51,6 +64,31 @@ dependencies:
     - MYTHIC_DUNGEONS
     - MYTHIC_CRUCIBLE
 ```
+
+## Matchmaking and Game Allocation
+### STATIC mode:
+- Your game will be allocated as a set of stateful containers. You can specify an additional property for the maximum number of containers (maxInstanceCount) and we will automatically provision additional servers based on the actual player load over time, up to that maximum count.
+- In a static mode, players can queue for a specific instance of your game. For example, Clans-1, Clans-2, and so on. 
+Your code should not make any assumptions about the actual number of servers at any given time. If there are no players on Clans-2, we may deallocate that instance until someone re-queues for Clans-2, at which point the server will be re-allocated (with its state restored). 
+- We reserve the right to restart containers as needed, but will fire off an event to your game before doing so. For example, if we need to restart Clans-2 to apply a code update that you published, our orchestration server will give your game a grace period to shut down before it is automatically restarted. This will be very similar to a SIGTERM and SIGKILL lifecycle in a process -- the game gets a warning first, giving it a chance to gracefully handle a shutdown, and then it is forcefully shut down at some point in the future. Our systems will make a best-effort attempt to avoid restarting instances with active players, and we will work on exposing the grace period as a parameter to you. We are still figuring out the best way to handle this case, but want for you to plan in advance for it.
+
+### DYNAMIC mode:
+- Your game will be allocated on-demand in response to matchmaking and queuing events. For example, if your game requires four players to begin, and eight players enter the queue, two instances of the game will be created automatically by our matchmaking and orchestration systems behind the scenes. These players are also transferred automatically once your game enters a healthy state as per our SDK lifecycle management.
+- In a dynamic mode, players queue for your game mode itself, and are allocated to game instances as they become available. For example, players may queue for SSM and end up being assigned to any number of different servers, as per our orchestration logic.
+- Your game must interact with our lifecycle SDK to indicate when it is safe or unsafe to shut down the game. This is usually between minigame iterations. Our systems make a best-effort attempt to keep the container alive, and may add more players during this time (it's like a game lobby window). However, in some cases (such as if insufficient players are in the game mode), the container may be shut down. Once again, we will deliver a shutdown event and a grace period in case you want to re-queue players for another mode or lobby before the container is killed. Otherwise, players are sent back to the Mineplex hub.
+
+## Dependencies
+<Note type="note">
+This feature requires an Organization subscription, individual subscriptions cannot use this feature!.
+</Note>
+
+Mineplex has partnered with a number of leading plugin authors to support unique and innovative game experiences within the Studio. These plugins can be enabled using the `dependencies.libraries` configuration property within the `game-properties.yaml` file. 
+
+Some of the values that are currently supported are:
+- `MYTHIC_MOBS`: This plugin allows you to create custom mobs with unique abilities and behaviors.
+- `MODEL_ENGINE`: This plugin allows you to create custom models for mobs, items, and blocks.
+- `MYTHIC_DUNGEONS`: This plugin allows you to create custom dungeons with unique mobs, loot, and mechanics.
+- `MYTHIC_CRUCIBLE`: This plugin allows you to create custom PvP arenas with unique mechanics and objectives.
 
 ## Game Explorer Configuration
 Players can find your game from the Mineplex Lobby using the compass icon and navigation menu. In the game explorer menu, they are able to see a list of attributes that describe your game which can be configured in the `game-properties.yaml` file. These attributes include:
@@ -62,20 +100,6 @@ Players can find your game from the Mineplex Lobby using the compass icon and na
 - `game.category`: (string) the category that your game falls under in the game explorer menu. Examples include `Survival`, `PvP`, and `Parkour`.
 - `game.tags`: (string[]) a list of tags that describe your game. These can describe categories, but can also describe attributes of the game such as `Team`, `Sandbox`, and so on.
 - `game.playtestPlayerIds`: (string[]) a list of player UUIDs that are allowed to playtest your game on the staging network. This is useful for sharing your game with a select group of players before it is published to the Mineplex network.
-
-### Supporting a Subset of Platforms
-By default, the Studio assumes that your game supports both Java and Bedrock clients. In some cases, this may not be possible. If your game should only be accessible to a subset of platforms, you can specify a `game.supportedPlatforms` attribute in the `game-properties.yaml` file. This attribute should be an array of strings, where each string is a platform identifier. The supported platform identifiers are:
-- `JAVA`: Java Edition clients
-- `BEDROCK`: Bedrock Edition clients
-
-For example, if your game only supports Java Edition clients, you should set the `game.supportedPlatforms` attribute as follows:
-```yaml
-game:
-  supportedPlatforms:
-    - JAVA
-```
-
-We strongly recommend that games support all platforms whenever possible. This makes your game accessible to a larger audience and increases the likelihood of player engagement. Games that limit supported platforms will receive extra scrutiny during the review process to ensure that they are not needlessly limiting player access.
 
 ## Advanced Configuration and Overrides
 

@@ -86,7 +86,7 @@ export const Documents = [
                 href: "/installation"
             },
             {
-                title: "Built-In Modules",
+                title: "Features",
                 href: "/modules",
                 items: [
                     {

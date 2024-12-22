@@ -3,22 +3,42 @@ title: Publishing Projects
 description: Learn how to publish and monetize your Studio game
 ---
 
-As a Studio developer, you have the ability to interact with two different Mineplex hosted environments which serve different purposes. These are:
-- Staging, or `stg` (which is allocated for developers and has the lobby IP of `stg.mineplex.com`)
+As a Studio developer, you have the ability to interact with three different Mineplex hosted environments which serve different purposes. These are:
+- Development, or `dev` (which is allocated for developers and gives an automatic, unique IP when running start)
+- Staging, or `stg` (which is allocated for developers and has the lobby IP of `mc-stg.mineplex.com`)
 - Production, or `prod` (which is allocated for the general public has the lobby IP of `mineplex.com`)
 
-## Staging
-Your Studio account lives in the Staging environment, and whenever you create or modify projects, you are acting on the Staging environment. Similarly, Development Containers (initiated by the `studio start` command) live within the Staging environment.
+## Deployment Stages
+<Step> 
 
-This environment generally functions identically to the Production environment, with several key differences:
-- There is an in-game override for free Crowns which can be used for testing in-game purchases
-- The underlying hardware has additional limitations including lower network bandwidth and smaller compute resources
-- Crown purchases to game modes (whether they are made with free or paid Crowns) are not paid out to developers, but can be manually refunded at any time
-- Staging is intended for game development and testing, and is monitored regularly for misuse
+    <StepItem title="Development">
+    Development containers should be used to verify your game works as expected, with your team.
+    You can generate a development container using the `studio start` command.
+    </StepItem>
 
-When you push code changes to your project's GitHub repository, the Studio GitHub Publisher action will automatically build your project into a TAR file, upload it to the Studio, and upload your purchase definition files and game configuration to Mineplex. You can then launch your game mode within the Studio Staging environment identically to the Production environment, with the restrictions listed above.
+    <StepItem title="Staging">
+    When you're happy with your changes, pushing them to your github repository will 
 
-## Production
-Once your game is ready for publishing, you must initiate a Game Review. During a Game Review, we perform static analysis and gameplay testing on your code (through both manual and automated means) to ensure that your game complies with the Mineplex terms of service and Studio guidelines. Submissions are processed on a first-come, first-serve basis, and reviews may take up to one week. In the event that your game is rejected, you can make the necessary adjustments and re-submit as soon as you are ready for an additional review.
+    This environment generally functions identically to the Production environment, with several key differences:
+    - There is an in-game override for free Crowns which can be used for testing in-game purchases
+    - The underlying hardware has additional limitations including lower network bandwidth and smaller compute resources
+    - Crown purchases to game modes (whether they are made with free or paid Crowns) are not paid out to developers, but can be manually refunded at any time
+    - Staging is intended for game development and testing, and is monitored regularly for misuse
 
-After your project has passed the review process, it will be automatically published to Production. Players in the general public can then discover and play your game, as well as spend Crowns on it which will be paid out (per your profit-sharing agreement) monthly!
+    When you push code changes to your project's GitHub repository, the Studio GitHub Publisher action will automatically build your project into a TAR file, upload it to the Studio, and upload your purchase definition files and game configuration to Mineplex. You can then launch your game mode within the Studio Staging environment identically to the Production environment, with the restrictions listed above.
+    </StepItem>
+
+    <StepItem title="Review">
+    Once your game is ready for publishing, you must initiate a Game Review. During a Game Review, we perform static analysis and gameplay testing on your code (through both manual and automated means) to ensure that your game complies with the Mineplex terms of service and Studio guidelines. Submissions are processed on a first-come, first-serve basis, and reviews may take up to one week. In the event that your game is rejected, you can make the necessary adjustments and re-submit as soon as you are ready for an additional review.
+
+    You can read more information about our review process on this handy [information page](/docs/auxiliary/review-process).
+    </StepItem>
+
+    <StepItem title="Production">
+    After your project has passed the review process, it will be automatically published to Production. Players in the general public can then discover and play your game, as well as spend Crowns on it which will be paid out (per your profit-sharing agreement) monthly!
+    </StepItem>
+
+</Step>
+
+## GitHub Publishing Action
+

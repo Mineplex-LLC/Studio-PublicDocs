@@ -17,14 +17,17 @@ export const Documents: Paths[] = [
             href: "/example-project",
         },
         {
-            title: "Game Configuration",
-            href: "/game-config",
-        },
-        {
             title: "Project Namespaces",
             href: "/namespaces"
         }
     ]
+  },
+  {
+    spacer: true,
+  },
+  {
+    title: "Project Configuration",
+    href: "/configuration",
   },
   {
     spacer: true,
@@ -38,7 +41,7 @@ export const Documents: Paths[] = [
             href: "/data-privacy"
         },
         {
-            title: "Game Publishing",
+            title: "Project Publishing",
             href: "/publishing"
         },
         {
@@ -88,8 +91,8 @@ export const Documents: Paths[] = [
             href: "/installation"
         },
         {
-            title: "Built-In Modules",
-            href: "/modules",
+            title: "Features",
+            href: "/features",
             items: [
                 {
                     title: "Chat Module",
