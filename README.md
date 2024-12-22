@@ -11,8 +11,8 @@ Feel free to contribute any extra information, or add any non-documented feature
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/rubixvi/rubix-documents.git
-    cd rubix-documents
+    git clone https://github.com/Mineplex-LLC/Studio-Documentation
+    cd Studio-Documentation
     ```
 
 2. Install dependencies:
