@@ -1,0 +1,52 @@
+---
+title: Security Guidelines
+description: Rules about what you can and cannot do with the Studio platform.
+---
+
+We’re excited by the opportunities the Studio provides for innovation. However, the security of our platform is an essential and top priority. Players trust us to keep them and their data safe, and we therefore have strict security guidelines that all Studio developers must adhere to.
+
+<Note type="danger" title="Warning!">
+Violation of the Studio security guidelines may lead to disciplinary actions including, but not limited to, account suspension, Crown payout confiscation, and legal action.
+</Note>
+
+## Security Rules and Prohibited Implementations
+The following actions are prohibited in all Studio projects without our express written permission:
+- **External Network Calls**: No calls to external networks are allowed.
+- **Network Eavesdropping**: Prohibited activities include packet listeners or DNS/IP scanning.
+- **API Fuzzing**: No fuzzing, DoS, DDoS attacks, or unapproved load tests against Mineplex services.
+- **Data Exfiltration**: No unauthorized transfer of data, plugins, or assets.
+- **Java Native Interface (JNI)**: Usage of JNI is prohibited.
+- **Process Runners**: No unauthorized execution of external processes.
+- **Network Device Manipulation**: Activities like IP table access, ARP cache manipulation, and similar are forbidden.
+- **Container Runtime Access**: No attempts to access, interact with, or manipulate the underlying container runtime or Studio agent process.
+
+## Best Practices for Security
+To further enhance security, studios should adhere to the following best practices:
+
+- **Secure Coding**: Follow secure coding practices to minimize vulnerabilities.
+- **Regular Updates**: Keep your development environment and dependencies up-to-date.
+- **Access Control**: Implement strict access control measures to ensure only authorized personnel can access sensitive areas of your project.
+- **Code Reviews**: Conduct regular code reviews to identify and mitigate potential security issues.
+- **Threat Modeling**: Regularly perform threat modeling to anticipate and defend against potential security threats.
+- **Incident Response Plan**: Have a clear incident response plan in place to quickly address any security breaches.
+
+## Reporting Security Issues
+It is crucial that any security vulnerabilities or violations are reported immediately to maintain the integrity of our platform.
+
+### How to Report
+- **Email**: Contact us at `support@mineplex.com`.
+- **Discord**: Notify us in the Studio Partner Discord after sending an email for urgent issues.
+
+By following these guidelines and promptly reporting any security concerns, you help us ensure a safe and secure environment for everyone.
+
+## FAQ
+### What should I do if I'm unsure whether an action is prohibited?
+If you are unsure whether a specific action is allowed, please contact us in the Studio Partner Discord for clarification before proceeding.
+
+### Can I request permission for a prohibited action?
+Yes, you can request permission by contacting us at `support@mineplex.com`. Provide a detailed explanation of your request and the reasons for it.
+
+### What happens if I accidentally violate a security rule?
+Accidental violations should be reported immediately. We will investigate the incident and work with you to resolve the issue, taking into account the nature and impact of the violation.
+
+By adhering to these security guidelines and best practices, you contribute to the overall safety and trust of our platform.

@@ -1,0 +1,133 @@
+---
+title: Punishment Reasons
+description: Details about how the punishment reason system works
+---
+
+The Punishment Reasons System is designed to provide a comprehensive framework for moderating projects efficiently. It includes built-in reasons to address common violations and enables consistent handling of infractions without requiring additional development work.
+
+## Built-In Reasons
+The following reasons are pre-configured as part of the system. Each reason is associated with a specific type of punishment, a description, severity level, unique identifier, and duration.
+
+The built-in reasons are located in the following class: `com.mineplex.studio.sdk.modules.moderation.BuiltInReason`
+
+### List of Built-In Reasons
+
+#### 1. Teaming
+- Punishment Type: Temporary Ban (TEMP_BAN)
+- Description: Teaming with other users
+- Severity Level: 1
+- Identifier: teaming
+- Duration: 24 hours
+
+#### 2. Exploiting
+- Punishment Type: Temporary Ban (TEMP_BAN)
+- Description: Exploiting game mechanics
+- Severity Level: 2
+- Identifier: exploiting
+- Duration: 48 hours
+
+#### 3. Griefing
+- Punishment Type: Temporary Ban (TEMP_BAN)
+- Description: Griefing or destroying others' builds
+- Severity Level: 2
+- Identifier: griefing
+- Duration: 7 days
+
+#### 4. Unauthorized Use
+- Punishment Type: Temporary Ban (TEMP_BAN)
+- Description: Using unauthorized tools or scripts
+- Severity Level: 2
+- Identifier: unauthorized_use
+- Duration: 48 hours
+
+#### 5. Team Killing
+- Punishment Type: Temporary Ban (TEMP_BAN)
+- Description: Killing teammates or sabotaging team efforts
+- Severity Level: 2
+- Identifier: team_killing
+- Duration: 24 hours
+
+#### 6. Exploitation
+- Punishment Type: Temporary Ban (TEMP_BAN)
+- Description: Exploiting bugs or glitches
+- Severity Level: 2
+- Identifier: exploitation
+- Duration: 48 hours
+
+#### 7. AFK Grinding
+- Punishment Type: Temporary Ban (TEMP_BAN)
+- Description: Using automated systems for AFK grinding
+- Severity Level: 2
+- Identifier: afk_grinding
+- Duration: 7 days
+
+#### 8. Chat Escalation
+- Punishment Type: Temporary Mute (TEMP_MUTE)
+- Description: Escalation to Mineplex staff
+- Severity Level: 1
+- Identifier: chat_escalation
+- Duration: 7 days
+
+#### 9. Hacking Escalation
+- Punishment Type: Temporary Ban (TEMP_BAN)
+- Description: Escalation to Mineplex staff
+- Severity Level: 1
+- Identifier: hacking_escalation
+- Duration: 7 days
+
+## Creating Custom Reasons
+
+This guide provides two approaches to creating custom reasons for punishments: using the `PunishmentReasonImpl` builder or creating an enum that extends `PunishmentReason`.
+
+### Which Option to Choose?
+- Option 1: Use if you need to dynamically create reasons at runtime.
+- Option 2: Use if you have a fixed set of reasons and want to avoid duplication.
+
+### Option 1: Creating instance of PunishmentReasonImpl
+To create a custom punishment reason with `PunishmentReasonImpl`, use its builder pattern. This allows you to define specific details such as type, display reason, priority, identifier, and duration.
+
+```java
+final PunishmentReasonImpl banReason = PunishmentReasonImpl.builder()
+    .type(PunishmentType.TEMP_BAN)
+    .displayReason("Excessive Toxicity")
+    .priority(1)
+    .reasonIdentifier("toxicity")
+    .duration(Duration.ofSeconds(3600 * 24));
+```
+
+### Option 2: Enum that extends PunishmentReason
+For a more structured approach, define an enum that implements the PunishmentReason interface. This is useful when you need a predefined, reusable set of custom reasons.
+
+```java
+@RequiredArgsConstructor
+@Getter
+public enum CustomReason implements PunishmentReason {
+    MY_REASON(PunishmentType.TEMP_BAN, "My custom reason", 1, "custom_reason", Duration.ofHours(24));
+
+    /**
+     * The {@link PunishmentType} associated with this reason.
+     */
+    private final @NonNull PunishmentType type;
+
+    /**
+     * A user-friendly display string for this reason.
+     */
+    private final @NonNull String displayReason;
+
+    /**
+     * The priority level of this reason, which may be used to determine the severity or importance.
+     */
+    private final int priority;
+
+    /**
+     * A unique identifier for this reason (unique within your namespace).
+     */
+    private final @NonNull String reasonIdentifier;
+
+    /**
+     * The duration for which the punishment should last.
+     * A duration of {@link Duration#ZERO} indicates a permanent punishment.
+     */
+    private final @NonNull Duration duration;
+}
+```

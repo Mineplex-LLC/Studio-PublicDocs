@@ -1,0 +1,126 @@
+---
+title: Punishment Object
+description: Punishment object and how to use it
+---
+
+The Punishment interface defines the structure and behavior of a punishment entity. It includes methods to access punishment details, check conditions, and compute properties such as its remaining duration or global applicability.
+
+## Default Implementation: PunishmentImpl
+
+The `PunishmentImpl` class provides a concrete implementation of the Punishment interface. It represents a punishment applied to an offline player and includes details about the player, moderator, reason, and scope of the punishment.
+
+### Key Features
+
+- Builder Pattern: Uses Lombok's @Builder annotation for convenient instantiation.
+- Immutable Data: Defined with Lombok's @Value for immutability.
+- Default Values: Provides default values for fields like startTimestamp, removalInformation, and notes.
+
+### Fields
+- playerId (UUID): The UUID of the punished player.
+- moderatorId (UUID): The UUID of the moderator who issued the punishment.
+- startTimestamp (Instant): The timestamp when the punishment was applied (default: current time).
+- applicableProjects (`Set<String>`): The set of projects the punishment applies to.
+- punishmentReason (PunishmentReason): The reason for the punishment.
+- removalInformation (PunishmentRemoval): Information about the removal of the punishment (default: null).
+- identifier (UUID): The unique identifier of the punishment (default: null).
+- notes (String): Additional notes or comments about the punishment (default: null).
+
+### Usage Example:
+```java
+final PunishmentImpl punishment = PunishmentImpl.builder()
+    .playerId(UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
+    .moderatorId(UUID.fromString("223e4567-e89b-12d3-a456-426614174000"))
+    .startTimestamp(Instant.now())
+    .applicableProjects(Set.of(Objects.requireNonNull(System.getenv("MINEPLEX_PROJECT_ID"))))
+    .punishmentReason(BuiltInReason.HACKING_ESCALATION)
+    .notes("https://evidence.com")
+    .build();
+```
+
+## Method Overview
+
+### Identification Methods
+
+#### `hasIdentifier()`
+- Checks if the punishment has a unique identifier.
+- Returns: `true` if the identifier exists, otherwise `false`.
+
+#### `getIdentifier()`
+- Retrieves the unique identifier for the punishment.
+- Returns: `Optional<UUID>` containing the identifier if available.
+
+### Player and Moderator Information
+
+#### `getPlayerId()`
+- Retrieves the UUID of the punished player.
+- Returns: UUID of the player.
+
+#### `hasModeratorId()`
+- Checks if the punishment has a moderator ID.
+- Returns: true if a moderator ID exists, otherwise false.
+
+#### `getModeratorId()`
+- Retrieves the UUID of the moderator who issued the punishment.
+- Returns: `Optional<UUID>` containing the moderator ID if available.
+
+### Timing Information
+
+#### `getStartTimestamp()`
+- Retrieves the timestamp when the punishment was issued or should begin.
+- Returns: Instant representing the start time.
+
+#### `getRemainingDuration()`
+- Computes the remaining duration of the punishment.
+- Returns: Duration of the remaining time.
+
+<Note title="Important Note" type="danger" >
+If a punishment is permanent, you will receive `Duration.ZERO` in return from this method
+</Note>
+
+### Applicability and Scope
+
+#### `getApplicableProjects()`
+- Retrieves the set of project IDs where the punishment applies.
+- Returns: `Set<String>` containing applicable project IDs.
+
+#### `appliesTo(String projectIdentifier)`
+Checks if the punishment applies to a specific project.
+
+**Parameters:**
+- projectIdentifier: The project ID to check.
+
+- Returns: true if applicable, otherwise false.
+
+#### `isGlobal()`
+- Determines if the punishment is global (applicable to all projects).
+- Returns: true if global, otherwise false.
+
+### Punishment Reason
+
+#### `getPunishmentReason()`
+- Retrieves the reason for the punishment.
+- Returns: PunishmentReason containing the reason details.
+
+### Notes and Additional Information
+
+#### `hasNotes()`
+- Checks if the punishment has associated notes.
+- Returns: true if notes exist, otherwise false.
+
+#### `getNotes()`
+- Retrieves notes or comments about the punishment.
+- Returns: `Optional<String>` containing the notes if available.
+
+### Removal Information
+
+#### `hasRemovalInformation()`
+- Checks if the punishment has been removed.
+- Returns: true if removal information exists, otherwise false.
+
+#### `getRemovalInformation()`
+- Retrieves removal details if the punishment has been removed.
+- Returns: `Optional<PunishmentRemoval>` containing the removal information.
+
+#### `isRemoved()`
+- Checks if the punishment has been removed.
+- Returns: true if removed, otherwise false.

@@ -1,0 +1,27 @@
+---
+title: Resource Pack SDK
+description: How to use the Mineplex Studio Resource Pack SDK
+---
+
+# Resource Pack Module
+
+The resource pack module allows game developers on the Mineplex Studio to retrieve uploaded resource pack and display those to players.
+All resource packs must be stored in the `config/resource-packs` directory and are identified by their file name.
+
+## Uploading Resource Packs
+Store all your resource packs in the `config/resource-packs` directory, and they will be uploaded to the Mineplex Studio 
+automatically during the github build action or during the start of your development server.
+
+## Updating Resource Packs
+To update a resource pack, simply replace the old version with the new version and re-run the github action or re-start the development server. 
+
+## Retrieving Resource Packs
+ ```java
+ public ResourcePack getResourcePack(final String packName) {
+    resourcePackModule.get(packName);
+ }
+ 
+ public ImmutableMap<String, ResourcePack> getResourcePacks() {
+    return resourcePackModule.getAll();
+ }
+ ```

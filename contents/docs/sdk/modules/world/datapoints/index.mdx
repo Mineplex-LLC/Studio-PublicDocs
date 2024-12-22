@@ -1,0 +1,86 @@
+---
+title: World Datapoints
+description: Information about our map datapoint system.
+---
+
+### What are datapoints?
+ Data Points are designed to be stored and loaded from template maps. They allow your level designers to dynamically place down keyed data points while building your maps, which can then be queried at runtime to locate points of interest. This allows you to constantly deploy new maps without needing to update your code, and saves you having to hardcode points of interest for each map. 
+
+### MineplexWorld Datapoints
+Data Points can be queried from a `MineplexWorld` using the `getDataPoints(String)` method, which returns a `List` of `Location`s stored under a given key, or using the `getDataPoints()` method, which returns a `Map` of each key to the `List` of `Location`s stored under them.
+
+### Default Implementation
+Our implementation of the MineplexWorldModule allows you to load up a Zip file. This zip file is able to be encoded with datapoints without the need for runtime rendering or calculation of the datapoints.
+
+In order to load them, within a world's zip file, include `dataPoints.json` or `dataPoints.yml`:
+
+#### Example file structure:
+<FileTree>
+  <Folder name="CAKE-WARS_COOKIE.zip" label="Example World">
+    <Folder name="data" label="data"></Folder>
+    <Folder name="entities" label="entities"></Folder>
+    <Folder name="region" label="region"></Folder>
+    <File name="dataPoints.json" label="dataPoints.json" />
+    <File name="level.dat" label="level.dat" />
+  </Folder>
+</FileTree>
+
+This Zip file would then be placed in your repository's `/assets/world-templates` folder and loaded using the world loading methods described in the [World Module](.) documentation.
+
+#### Example JSON file:
+```json
+{
+  "SPAWNPOINT_1": [
+    {
+      "x": 0.5,
+      "y": 67.0,
+      "z": 11.5,
+      "yaw": -180.0,
+      "pitch": 0.0
+    }
+  ],
+  "STORE_NPC": [
+    {
+      "x": -11.476646845190304,
+      "y": 72.0,
+      "z": 25.511839252200495,
+      "yaw": 269.12354,
+      "pitch": 33.138355
+    },
+    {
+      "x": 12.5,
+      "y": 72.0,
+      "z": 25.5,
+      "yaw": 90.0,
+      "pitch": 0.0
+    }
+  ],
+  "SPAWNPOINT_2": [
+    {
+      "x": 41.5,
+      "y": 67.0,
+      "z": -18.5,
+      "yaw": 90.0,
+      "pitch": 0.0
+    }
+  ],
+  "SPAWNPOINT_3": [
+    {
+      "x": 18.5,
+      "y": 122.0,
+      "z": 180.5,
+      "yaw": -180.0,
+      "pitch": 0.0
+    }
+  ],
+  "SPAWNPOINT_4": [
+    {
+      "x": 18.5,
+      "y": 121.0,
+      "z": 238.5,
+      "yaw": -180.0,
+      "pitch": 0.0
+    }
+  ],
+}
+```

@@ -1,0 +1,33 @@
+---
+title: Leaderboard Module
+description: How to use the Mineplex Studio Leaderboard Module.
+---
+
+The Leaderboard Module is one of the built-in Studio Modules that allows you to create dynamic leaderboards based on whatever metric you want. Leaderboards can rank players, teams, or any other entity of your choosing, and are updated in real time. As soon as a leaderboard is changed, it is retrievable with the freshest data.
+
+## Leaderboard Retrieval
+You can choose to retrieve a leaderboard by the top N players using the `getLeaderboard(String, int)` method, or query for the exact leaderboard position of a specific player/team/entity/etc using the `getLeaderboardEntry(String, String)` method.
+
+## Leaderboard Updates
+You can also wipe a specific entry off a leaderboard using the `clearLeaderboardScore(String, String)` method, or clear the whole board at once with the `clearLeaderboard(String)` method. Leaderboards can be updated by either directly setting an entry score with the `updateLeaderboardScore(String, String, double)` method, or by incrementing by a specified amount using the `incrementLeaderboardScore(String, String, double)` method.
+
+## Alternative Methods
+All leaderboard methods can be run synchronously or asynchronously to ensure you avoid blocking the main thread. Additionally, all the leaderboard update and entry query methods will directly accept a Player instead of an entry ID.
+
+# Examples
+
+## Getting the Top 10 Kills Leaderboard
+Let's say our game tracks player kills on a leaderboard. We can retrieve the top 10 players on this leaderboard at any time.
+```java
+public CompletableFuture<List<LeaderboardEntry>> getTopKills() {
+    return leaderboardModule.getLeaderboardAsync("Kills", 10);
+}
+```
+
+## Incrementing the Kills Leaderboard
+Every time a player gets a kill, we want to update the leaderboard with their new score.
+```java
+public void onKill(final Player killer, final Player victim) {
+    leaderboardModule.incrementLeaderboardScore("Kills", killer, 1);
+}
+```

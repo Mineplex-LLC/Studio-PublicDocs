@@ -1,0 +1,196 @@
+---
+title: Purchase Module
+description: How to use the Mineplex Studio Purchase Module
+---
+
+The purchases module allows game developers on the Mineplex Studio to monetize their work by creating digital products available for single and repeatable sale formats as well as digital subscriptions that support reccurring payments. 
+
+## High Level Purchase Flow
+Purchases within the Mineplex Studio are based on our in-game digital currency, called Crowns. Players use their local currency (such as US Dollars or Euros) to purchase Crowns from our website or in-game flows, and can then redeem these crowns for products and subscriptions listed by developers like you. At the end of the month, we pay out a profit-share based on the crowns spent within a given game mode to the developers. 
+
+## Purchase Acknowledgements and Technical Flow
+The purchase flow works as follows:
+<Step>
+  <StepItem title="Player Prompts Purchase">
+    A player takes an in-game action that triggers the `promptPurchase` method in the Mineplex Purchases SDK module
+  </StepItem>
+  <StepItem title="Crowns Debited">
+    The Mineplex payments service attempts to debit the player Crown balance
+  </StepItem>
+  <StepItem title="Event Received">
+    An event is sent back to your game code based on the `callbackDelivery` mode defined in the purchaseable defintion file (see below). Events will only be delivered to one server at a time (your code generally does not need to handle event delivery atomically or in a concurrency-safe mode)
+  </StepItem>
+  <StepItem title="You Reward Player">
+    If the purchase was successful, your code must grant the player the entitlement (such as an item or XP boost) and acknowledge the flow completion with the Mineplex payments service. You should acknowledge purchase events immediately after granting entitlements to avoid duplicate delivery
+  </StepItem>
+</Step>
+
+<Note type="note">
+- Events that are not acknowledged will be retried several times after a brief delay (currently up to three times with five-second delays, subject to change)
+- Events that are not acknowledged within a sufficient time period or after the maximum retry count will be cancelled, and the crown transaction will be automatically refunded
+</Note>
+
+## Creating and Maintaining Products
+To initiate the payment creation process, you can construct YAML files containing your product parameters, each including the following mandatory details. All parameters must be completed and must not be left empty or assigned a null value. Place these YAML files into the `config/purchases/` repository directory, with any file name. We uniquely identify your purchases within the project namespace based on the `productId` that you provide (so you should avoid changing this value).
+
+**productId** *String* - An unique product identifier assigned by the creator. This identifier is utilized for retrieving and deleting your product object after its creation.
+
+**productName** *String* - The name of the product being offered for sale. This is the primary name that users will see when looking to purchase a product.
+
+**productDescription** *String* - A description of the product being offered. This description is available to customers when reviewing the product offering prior to purchasing.
+
+**price** *Long* - The price of the digital asset for sale. This value is represented by Mineplex's digital currency: Crowns.
+
+**callbackDelivery** *enum* - Defines the parameters for the delivery of the product to the purchasers' player account. The available inputs are: `ONLY_WHEN_PLAYER_ONLINE` and `ALLOW_OFFLINE_DELIVERY`.
+
+**Product File Definition Structure**
+```yaml
+productId: "power-up-1"
+productName: "Power Up"
+productDescription: "This power up allows you to be more powerful!"
+price: 100
+callbackDelivery: "ONLY_WHEN_PLAYER_ONLINE"
+repeatablePurchase: false
+```
+
+## Creating and Maintaining Subscriptions
+The subscription creation process is very similar to that of single sale digital products. You can construct YAML files containing your product parameters, each including the following mandatory details. All parameters must be completed and must not be left empty or assigned a null value. Place these YAML files into the `config/subscriptions/` repository directory, with any file name. We uniquely identify your subscriptions within the project namespace based on the `subscriptionId` that you provide (so you should avoid changing this value).
+
+**subscriptionId** *String* - An unique subscription identifier assigned by the creator. This identifier is utilized for retrieving and deleting your subscription object after its creation.
+
+**subscriptionName** *String* - The name of the subscription being offered for sale. This is the primary name that users will see when looking to subscribe to a subscription.
+
+**subscriptionDescription** *String* - A layout of the offerings of the subscription. This description is available to customers when reviewing the subscription offering prior to purchasing.
+
+**price** *Long* - The reoccurring price of the subscription. This value is represented by Mineplex's digital currency: Crowns.
+
+**subscriptionBasis** *enum* - This defines the reoccurring billing cycle of the subscription. The available inputs are: 'MONTHLY' | 'QUARTERLY' | 'SEMI_YEARLY' | YEARLY'
+
+**callbackDelivery** *enum* - Defines the parameters for the delivery of the product to the purchasers' player account. The available inputs are: `ONLY_WHEN_PLAYER_ONLINE` and `ALLOW_OFFLINE_DELIVERY`.
+
+**Subscription File Definition Structure**
+```yaml
+subscriptionId: "power-up-subscription-1"
+subscriptionName: "Monthly Power-Up"
+subscriptionDescription: "Get a bonus power-up every month by purchasing this subscription!"
+price: 100
+subscriptionBasis: "MONTHLY"
+callbackDelivery: "ONLY_WHEN_PLAYER_ONLINE"
+```
+
+## Discounts and Promotions
+Developer-defined discounts and promotions are not yet supported, but are coming soon! If you have a special requirement to offer limited-time pricing, please contact us.
+
+## Restrictions for Updating and Deleting Purchaseables
+To avoid accidental deletion, the Mineplex GitHub Action that publishes your project will never delete old subscriptions or products, even if you remove their respective definition files. If you wish to delete a product or subscription, you must do so manually from the Studio Web Console. 
+
+To ensure a player-friendly experience, we also enforce certain restrictions.
+
+For product listing updates, you cannot currently change:
+- The repeatable purchase status
+
+For subscription listing updates, you cannot currently change:
+- A subscription's basis, or duration
+- The price of a subscription
+
+## Listening for Purchases
+
+Developers must listen to bukkit events emitted by the internal purchase module.
+There are four types of purchase events that you can listen for inside your plugin.
+
+`AsyncProductPurchaseSuccessEvent** *<Product PendingTransaction<Product>>`
+- Fires when a product purchase is successful. Developers must grant the product and acknowledge the pending transaction.
+
+`AsyncProductPurchaseFailureEvent** *<Product FailedTransaction<Product>>`
+- Fires when a product purchase fails.
+
+`AsyncSubscriptionRenewalSuccessEvent** *<Subscription, PendingTransaction<Subscription>>`
+- Fires when a subscription purchase is successful. Developers must grant the subscription and acknowledge the pending transaction.
+
+`AsyncSubscriptionRenewalFailureEvent** *<Subscription, FailedTransaction<Subscription>>`
+- Fires when a subscription fails to renew. When a subscription fails to renew, developers must be sure to revoke the perks previously granted by this subscription.
+
+Although, developers have the choice of acknowledging incoming purchases.
+It is recommended to acknowledge and grant any purchases as soon as possible.
+If a purchase is not acknowledged, there will be a few delayed attempts before refunding the purchase.
+
+Let's use the example product above and create a listener that can give a player the power-up in game.
+
+### Example
+
+<Step>
+  <StepItem title="Purchase Event Listener">
+    ```java
+    public class PurchaseEventListener implements Listener {
+
+        private static final I18nText GRANT_POWERUP = new I18nText("MyPlugin", "PURCHASE_GRANT_POWERUP", "<gold>You received a power up!</gold>");
+        private static final I18nText PURCHASE_FAIL = new I18nText("MyPlugin", "PURCHASE_FAIL", "<red>Purchase of <product> failed! <reason></red>");
+
+        @EventHandler
+        public void onProductPurchaseSuccess(final AsyncProductPurchaseSuccessEvent event) {
+            // Get the transaction and product.
+            final PendingTransaction<Product> transaction = event.getTransaction();
+            final Product product = event.getPurchasable();
+
+            final OfflinePlayer offlinePlayer = event.getPlayer();
+            final Player onlinePlayer = offlinePlayer.getPlayer();
+
+            // Verify this is the correct product by productId
+            if (product.getId().equals("power-up-1")) {
+
+                // Verify that the player is online.
+                if (onlinePlayer == null) {
+                    return;
+                }
+
+                // Effect we want to grant to the player.
+                final PotionEffect potionEffect = new PotionEffect(PotionEffectType.ABSORPTION, (int) MinecraftTimeUnit.MINUTES.toTicks(2), 4);
+
+                // Grant the purchase. Make sure grant is thread-safe.
+                TaskUtil.onMainThread(() -> onlinePlayer.addPotionEffect(potionEffect)).run();
+
+                // Get message in the correct language and message the player.
+                final Component translatedMessage = MiniMessage.miniMessage().deserialize(GRANT_POWERUP.getText(onlinePlayer.locale()));
+                onlinePlayer.sendMessage(translatedMessage);
+
+                // Acknowledge the purchase after it has been granted and handle reversal in the event the acknowledgment fails.
+                transaction.acknowledge().exceptionally(ex -> {
+                    // Make sure reversal is thread-safe.
+                    TaskUtil.onMainThread(() -> onlinePlayer.removePotionEffect(potionEffect.getType())).run();
+                    return null;
+                });
+            }
+        }
+
+        @EventHandler
+        public void onProductPurchaseFail(final AsyncProductPurchaseFailureEvent event) {
+            // Get the transaction and product.
+            final FailedTransaction<Product> transaction = event.getTransaction();
+            final Product product = transaction.getPurchasable();
+
+            final OfflinePlayer offlinePlayer = event.getPlayer();
+            final Player onlinePlayer = offlinePlayer.getPlayer();
+
+            // Verify that the player is online.
+            if (onlinePlayer == null) {
+                return;
+            }
+
+            // Get message in the correct language, fill in the placeholders, and message the player.
+            final Component translatedMessage = MiniMessage.miniMessage().deserialize(
+                    PURCHASE_FAIL.getText(onlinePlayer.locale()),
+                    Placeholder.unparsed("product", product.getName()),
+                    Placeholder.unparsed("reason", transaction.getFailureReason().orElse(""))
+            );
+
+            onlinePlayer.sendMessage(translatedMessage);
+        }
+    }
+    ```
+    </StepItem>
+    <StepItem title="Register the Listener">
+    ```java
+    Bukkit.getPluginManager().registerEvents(new PurchaseEventListener(), plugin);
+    ```
+    </StepItem>
+</Step>

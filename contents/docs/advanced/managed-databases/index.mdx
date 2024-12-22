@@ -1,0 +1,25 @@
+---
+title: Managed Databases
+description: How to create and manage industry-standard databases for Studio projects including MySQL, PostgreSQL, and MongoDB
+---
+
+# When to use Managed Databases
+Managed databases are a powerful way to store and query data for your Studio project. Unlike the built-in Data Storage Module, these are highly flexible and often include a robust open-source driver and ecosystem. However, they also have a separate pricing structure and carry addiitonal operational burden. 
+
+Generally speaking, it is best for new projects or Studio developers to start with the built-in Data Storage Module. However, if you are already familiar with a specific database technology, or have a specific use case that requires a more powerful database, you may want to consider using a managed database.
+
+# Creating a Managed Database
+Managed Databases can be created with `yaml` files (simliar to purchase definitions) in your project's `config/databases` directory. These files define the database type, and may in the future also allow for version changes and other configuration options.
+
+## Example `config/databases/my-database.yaml`
+```yaml
+databaseName: "my-database"
+type: "MYSQL" # can be one of MYSQL, POSTGRES, or MONGO
+```
+
+If you are using the Mineplex-provided GitHub Publisher action, adding this file to your repository on the default branch will cause a MySQL database named `my-database` to be created. 
+
+# Using a Managed Database
+The Mineplex SDK provides built-in functionality for retrieving a database driver client based on its unique name. This client can be used to perform any operations that the database driver supports. For MySQL and Postgres, the SDK provides a `JDBC` client, and for MongoDB, the SDK provides a `MongoClient` client. 
+
+More details on retrieving a managed database client instance will be added soon.

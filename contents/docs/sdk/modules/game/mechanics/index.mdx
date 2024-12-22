@@ -1,0 +1,39 @@
+---
+title: Built-In Game Mechanics
+description: How to use the built-in Mineplex Studio Game MEchanics.
+---
+
+The Studio SDK comes with extensive built-in Game Mechanics that provide foundational functionality for all Studio
+projects. These built-in Game Mechanics are automatically registered, and can be accessed via
+the `MineplexGameMechanicFactory` method `construct(Class<T extends GameMechanic<? extends MineplexGame>)`
+
+## Pricing
+
+Built-in mechanics are provided free-of-charge!
+
+# Example
+
+Let's say we want to use the `Ability` mechanic in our project. As a very first step, we need to get
+a new instance of it.
+
+```java
+public class ExampleGame implements MineplexGame {
+    private final MineplexGameMechanicFactory gameMechanicFactory =
+            MineplexModuleManager.getRegisteredModule(MineplexGameMechanicFactory.class);
+
+    private AbilityMechanic abilityMechanic;
+    
+    @Override
+    public void setup() {
+        this.abilityMechanic = this.gameMechanicFactory.construct(AbilityMechanic.class);
+        this.abilityMechanic.setup(this);
+        
+        // TODO: Register your own abilities here
+    }
+
+    @Override
+    public void teardown() {
+        this.abilityMechanic.teardown();
+    }
+}
+```

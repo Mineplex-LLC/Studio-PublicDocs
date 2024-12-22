@@ -1,0 +1,45 @@
+---
+title: Stats Module
+description: How to use the Mineplex Studio Stats Module.
+---
+
+ The Stats Module is one of the built-in Studio Modules that allows you to quickly and easily store, update, and retrieve dynamic player stats in categories that are configurable on-the-fly at runtime. Let players celebrate their wins and hours spent in your game, without having to do any of the heavy lifting and data storage yourself.
+
+## CRUD
+ The CRUD methods provided in the Stats Module are as follows:
+ - `getPlayerStats(player)` - Retrieves a `Map<String, Long>` of all stats the player has earned in this project namespace
+ - `awardPlayerStats(player, Map<String, Long>)` - Increments the specific stats for the player by specified amounts, returning the resulting stat values after the increment
+ - `setPlayerStats(player, Map<String, Long>` - Updates the specific stats for the player to the specified amounts
+ - `deletePlayerStats(player, List<String>` - Deletes the specified stats from the player's record
+
+ Each CRUD method can be called using either the player ID or the Player object itself. Additionally, each CRUD method has an asynchronous version for use when calling from the main thread.
+
+# Examples
+
+## Retrieving Player Stats
+ Let's say we've devised a cool way to show players their stats in our game. Before we can start displaying them, we have to retrieve them!
+ ```java
+ public void displayStats(final Player player) {
+     statsModule.getPlayerStatsAsync(player).thenAccept(stats -> {
+         Bukkit.getScheduler().runTask(myProjectPlugin, () -> {
+             // Display stats!
+         });
+     });
+ }
+ ```
+
+## Recording Stats
+ If we're going to display stats, we have to make sure we record them first!
+ ```java
+ public void recordWin(final Player player) {
+     // Increments player's "Wins" and "WinStreak" stats by 1
+     statsModule.awardPlayerStatsAsync(player, Map.of("Wins", 1L, "WinStreak", 1L));
+ }
+
+ public void recordLoss(final Player player) {
+     // Increments player's "Losses" stat by 1
+     statsModule.awardPlayerStatsAsync(player, Map.of("Losses", 1L));
+     // Sets player's WinStreak to 0 (since they lost)
+     statsModule.setPlayerStatsAsync(player, Map.of("WinStreak", 0L));
+ }
+ ```

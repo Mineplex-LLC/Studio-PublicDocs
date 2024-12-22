@@ -1,0 +1,24 @@
+---
+title: Player Ignore Module
+description: How to use the Mineplex Studio Player Ignore Module.
+---
+
+The Player Ignore Module is one of the built-in Studio Modules that allows you to check which players are ignoring each other. 
+This can be useful for creating custom chat filters, or for creating custom moderation tools.
+
+## Module Retrieval
+You can retrieve the module by using the ``MineplexModuleManager`` via 
+```java
+import com.mineplex.studio.sdk.modules.MineplexModuleManager;
+PlayerIgnoreModule ignoreModule = MineplexModuleManager.getRegisteredModule(PlayerIgnoreModule.class);
+```
+
+## Checking if a Player is Ignoring Another
+You can check if a player is ignoring another player by using the `isIgnoring(OfflinePlayer, OfflinePlayer)` or `isIgnoring(UUID, UUID)` method.
+In this example we are checking if `player` is ignoring `toCheck`. This will also return `true` if the data for `player` is not loaded.
+You can use `isLoaded(OfflinePlayer)` and `isLoaded(UUUID)` to check if the data is loaded.
+```java
+public boolean isIgnoring(Player player, Player toCheck) {
+    return ignoreModule.isIgnoring(player, target);
+}
+```

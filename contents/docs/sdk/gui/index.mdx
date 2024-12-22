@@ -1,0 +1,77 @@
+---
+title: GUI Menus
+description: How to use the GUI Menus in the Studio.
+---
+
+ By releasing your game on the Mineplex Studio, you are gaining access to players of both the Java Edition and Bedrock Edition of Minecraft simultaneously. While the two editions are similar, there are some key differences. One of the largest distinctions between the two is interaction with GUI Menus. Those familiar with Java Edition should be well-acquainted with the classic inventory-based menu, while those who primarily play Bedrock Edition are instead used to the modal-based Forms used in that version. Since your game is served to both types of player, it is important to reconcile this difference in functionality so everyone can play your game to the fullest.
+
+## MineplexGUI
+ Any GUI Menu used in a Studio project should implement the `MineplexGUI` interface. To do so properly, you are required to implement both a Bedrock Form menu using [Cumulus](https://wiki.geysermc.org/geyser/forms/) that is created when the `createBedrockForm(Player)` method is called, and a Java inventory menu using [InUI](https://github.com/NichtStudioCode/InvUI) that is created when the `createJavaInventoryMenu(Player)` method is called. The `MineplexGUI` interface additionally provides a default `createAndOpen(Player)` method implementation that checks if the player is on a Bedrock client, and if so opens the Bedrock Form, and otherwise opens the Java inventory menu.
+
+# Example
+ Let's create a very basic GUI Menu with one button a player can press.
+ ```java
+public class MyGUI implements MineplexGUI {
+    private void pickNo(final Player player) {
+        player.sendMessage(Component.text("Picked No!"));
+    }
+
+    private void pickYes(final Player player) {
+        player.sendMessage(Component.text("Picked Yes!"));
+    }
+
+    private void pickNone(final Player player) {
+        player.sendMessage(Component.text("Picked None!"));
+    }
+
+    @Override
+    public Form createBedrockForm(final @NotNull Player player) {
+        return ModalForm.builder()
+                .title("Y/N")
+                .content("Pick Yes or No")
+                .button1("Yes")
+                .button2("No")
+                .closedOrInvalidResultHandler(() -> this.pickNone(player))
+                .validResultHandler((modalForm, modalFormResponse) -> {
+                    if ("Yes".equals(modalFormResponse.clickedButtonText())) {
+                        this.pickYes(player);
+                    } else {
+                        this.pickNo(player);
+                    }
+                })
+                .build();
+    }
+
+    @Override
+    public Window createJavaInventoryMenu(final @NotNull Player player) {
+        final ItemStack yesItem = new ItemStack(Material.LIME_WOOL);
+        yesItem.editMeta(meta -> meta.displayName(MiniMessage.miniMessage().deserialize("<green>Yes</green>")));
+
+        final ItemStack noItem = new ItemStack(Material.RED_WOOL);
+        noItem.editMeta(meta -> meta.displayName(MiniMessage.miniMessage().deserialize("<red>No</red>")));
+
+        final Gui gui = Gui.normal()
+                .setStructure("# # # Y # N # # #")
+                .addIngredient('Y', new SimpleItem(yesItem, click -> this.pickYes(click.getPlayer())))
+                .addIngredient('N', new SimpleItem(noItem, click -> this.pickNo(click.getPlayer())))
+                .build();
+
+        return Window.single()
+                .setViewer(player)
+                .setTitle("Pick Yes or No")
+                .setGui(gui)
+                .addCloseHandler(() -> this.pickNone(player))
+                .build();
+    }
+}
+ ```
+ For details on creating more detailed menus, please visit the documentation for both types of GUIs.
+
+ Now that we've created our GUI Menu, we can show it to a player.
+ ```java
+ private final MyGUI myGUI = new MyGUI();
+
+ public void askPlayer(final Player player) {
+     myGUI.createAndOpen(player);
+ }
+ ```

@@ -1,0 +1,182 @@
+---
+title: Ability Game Mechanic
+description: How to use the Ability Game Mechanic.
+---
+
+### Mechanic
+
+The `AbilityMechanic` is one of the built-in `GameMechanic`s bundled with the Studio SDK. This mechanic allows you to
+create `Ability`s and grant/remove them to/from `LivingEntity`s. `Ability`s can be tightly coupled to a
+specific `MineplexGame`, or left generic to support a wide variety of games.
+
+#### Interface
+
+The base `Ability` interface defines a few methods that must be implemented by any specific `Ability`. These include
+methods like getting the name of the `Ability`, setup and teardown methods for the `Ability` instance, and start and
+stop methods for when the `Ability` is granted to/removed from a specific `LivingEntity`.
+In addition to the base `Ability` interface, there are two specific types of `Ability`: `PassiveAbility`, an interface
+that defines an `Ability` which is constantly running as long as a `LivingEntity` possesses it, which may grant
+the `LivingEntity` passive bonuses like fall damage reduction or regeneration, and `ActiveAbility`, which performs some
+specific action when triggered. The specific `Ability` is required to implement the passive granted by
+the `PassiveAbility`, as well as listening for the trigger of an `ActiveAbility` and implementing the activation and
+deactivation behavior. All registered `Ability`s function as `Listener`s, and do not have to be explicitly
+registered/unregistered with Bukkit by you.
+
+#### Factory
+
+An `AbilityFactory` provides for the dynamic construction of instances of a specific `Ability`. To function, the factory
+needs to be registered in the `AbilityMechanic` using
+the `registerAbilityFactory(Class<A extends Ability<G extends MineplexGame>>, AbilityFactory<G, A>)` method. Once the
+factory has been registered, you can use the `AbilityMechanic` to construct instances of the `Ability` using
+the `constructAbility(Class<A extends Ability<G extends MineplexGame>>, G)` method. All built-in `Ability`s that we
+provide have their factories pre-registered in the `AbilityMechanic`, so all you have to do is construct an instance
+when you want to use them. You do not need to create an `AbilityFactory` for your own custom `Ability`s, but you can if
+you'd like to. You will need to implement your own `AbilityFactory` if you plan to sell source-unavailable `Ability`s to
+other developers on our asset marketplace.
+
+# Examples
+## Passive Ability
+
+Let's make a custom passive ability that makes players take no fall damage.
+
+```java
+// Since this ability doesn't need to do anything specific to Hunger Games, we can make it generic,
+// so we can reuse it!
+@AllArgsConstructor
+public class WeightlessAbility implements PassiveAbility<MineplexGame> {
+    private final AbilityMechanic abilityMechanic;
+    private final MineplexGame game;
+
+    @Override
+    public AbilityMechanic getAbilityMechanic() {
+        return abilityMechanic;
+    }
+
+    @Override
+    public MineplexGame getGame() {
+        return game;
+    }
+
+    @Override
+    public String getName() {
+        return "Weightless";
+    }
+
+    @Override
+    public void setup(final MineplexGame game) {
+        // This ability doesn't need to allocate any additional resources
+    }
+
+    @Override
+    public void teardown() {
+        // This ability has no additionally allocated resources to clean up
+    }
+
+    @Override
+    public void start(final LivingEntity livingEntity) {
+        // This ability doesn't do anything to the host when it starts
+    }
+
+    @Override
+    public void stop(final LivingEntity livingEntity) {
+        // This ability doesn't do anything to the host that needs to be removed
+    }
+
+    @Override
+    public void tick(LivingEntity livingEntity) {
+        // This ability doesn't do anything on every tick
+    }
+
+    // Stop fall damage
+    @EventHandler
+    public void onFallDamage(final EntityDamageEvent event) {
+        // If the entity taking damage has this ability
+        if (event.getEntity() instanceof LivingEntity livingEntity && hasAbility(livingEntity)) {
+            // Only cancel fall damage
+            if (event.getCause() == EntityDamageEvent.DamageCause.FALL) {
+                event.setCancelled(true);
+            }
+        }
+    }
+}
+```
+
+```java
+// Since this ability doesn't need to do anything specific to Hunger Games, we can make it generic,
+// so we can reuse it!
+@AllArgsConstructor
+public class SneakyAbility implements ActiveAbility<MineplexGame> {
+    private final AbilityMechanic abilityMechanic;
+    private final MineplexGame game;
+
+    @Override
+    public AbilityMechanic getAbilityMechanic() {
+        return abilityMechanic;
+    }
+
+    @Override
+    public MineplexGame getGame() {
+        return game;
+    }
+
+    @Override
+    public String getName() {
+        return "Sneaky";
+    }
+
+    @Override
+    public void setup(final MineplexGame game) {
+        // This ability doesn't need to allocate any additional resources
+    }
+
+    @Override
+    public void teardown() {
+        // This ability has no additionally allocated resources to clean up
+    }
+
+    @Override
+    public void start(final LivingEntity livingEntity) {
+        // This ability doesn't do anything to the host when it starts
+    }
+
+    @Override
+    public void stop(final LivingEntity livingEntity) {
+        livingEntity.removePotionEffect(PotionEffectType.INVISIBILITY);
+    }
+
+    @Override
+    public void activate(final LivingEntity livingEntity) {
+        // Grant 10 seconds of invisibility
+        livingEntity.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY,
+                // 10 seconds * 20 ticks per second
+                10 * 20,
+                // Invisibility level 1, no need for an amplifier
+                0,
+                // This is not an ambient effect
+                false,
+                // We don't want to give away the player with potion particles
+                false,
+                // We do want the potion effect icon to show up on the player's screen
+                true));
+    }
+
+    @Override
+    public void deactivate(final LivingEntity livingEntity) {
+        livingEntity.removePotionEffect(PotionEffectType.INVISIBILITY);
+    }
+
+    // Listen for crouching
+    @EventHandler
+    public void onCrouch(final PlayerToggleSneakEvent event) {
+        // If the player has this ability
+        if (hasAbility(event.getPlayer()) && event.isSneaking()) {
+            // If they are crouching, activate, otherwise, deactivate
+            if (event.isSneaking()) {
+                activate(event.getPlayer());
+            } else {
+                deactivate(event.getPlayer());
+            }
+        }
+    }
+}
+ ```

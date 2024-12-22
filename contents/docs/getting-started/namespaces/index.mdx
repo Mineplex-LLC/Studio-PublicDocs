@@ -1,0 +1,16 @@
+---
+title: Project Namespaces
+description: How to use the Project Namespaces on the Mineplex Studio.
+---
+
+ Projects on the Mineplex Studio can optionally be grouped together inside Namespaces. Grouping Projects together within a Namespace allows you to share resources such as purchases, player stats, player data, and more.
+
+ By default, a Project is created inside its own independent Namespace. You can view and update a Project's Namespace from the `config/game-properties.yaml` file. You should exercise caution when changing a Namespace, since updates can be destructive and may cause your Project to lose access to existing resources inside its previous Namespace.
+ 
+ Currently, the following resources are shared by all Projects inside a Namespace:
+ - [Namespace Bans](/docs/sdk/modules/moderation)
+ - [Data Collections](/docs/sdk/modules/data)
+ - [Purchaseable Products and Subscriptions](/docs/sdk/modules/purchase)
+ - [Player Stats](/docs/sdk/modules/stats)
+ - [Leaderboards](/docs/sdk/modules/leaderboard)
+ - [Persistent World Buckets](/docs/sdk/modules/world)

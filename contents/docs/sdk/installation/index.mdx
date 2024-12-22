@@ -1,0 +1,9 @@
+---
+title: Dependency Installation
+description: How to install the Mineplex Studio SDK.
+---
+
+## Components and Updating the SDK
+The Studio SDK dependency is vended in two pieces:
+- The Core SDK, which contains a set of interfaces, data classes, and API contracts to interact with various Mineplex Modules. This is automatically added to your project and has the artifact coordinates of `com.mineplex.sdk.plugin`. You can update the version manually by changing the version of this artifact.
+- The Engine, which implements interfaces provided in the Core SDK. This is installed as a plugin JAR into your project when you test your code in Development Containers or when you publish your game to the Studio. The latest version of the Engine plugin is automatically vended to your game containers as they are launched, and there is not yet any way to specify other versions.

@@ -1,0 +1,24 @@
+---
+title: Built-In Modules
+description: How to use the built-in Mineplex Studio Modules.
+---
+
+The Studio SDK comes with extensive built-in Modules that provide foundational functionality for all Studio projects. These built-in Modules are automatically registered and enabled on startup, and can be accessed via the `MineplexModuleManager` method `getRegisteredModule(Class<T extends MineplexModule>)`. You should **never** manually destroy or disable these Modules.
+
+## Pricing (usually free!)
+Built-in modules are provided free-of-charge, with some restrictions, for developers that use a profit-sharing payout model (this probably applies to you!).
+
+We also offer a metered pricing tier to select game publishers, with minimum revenue and support model requirements. Built-in Modules are generally significantly cheaper than hosting other services or using equivalent functionalities provided outside the Studio.
+
+# Example
+Let's say we want to create a new `MineplexWorld` in our project. As a very first step, we need to get the `MineplexWorldModule`.
+
+```java
+public void createWorlds() {
+    final MineplexWorldModule worldModule = MineplexModuleManager.getRegisteredModule(MineplexWorldModule.class);
+
+    // Now create worlds...
+}
+```
+
+Now that we have the module, we can proceed with world creation.

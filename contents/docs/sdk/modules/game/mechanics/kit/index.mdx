@@ -1,0 +1,115 @@
+---
+title: Kit Game Mechanic
+description: How to use the Kit Game Mechanic.
+---
+
+### Mechanic
+
+The `KitMechanic` is one of the built-in `GameMechanic`s bundled with the Studio SDK. This mechanic allows you to
+create `Kit`s and grant/remove them to/from `LivingEntity`s. `Kit`s can be tightly coupled to a specific `MineplexGame`,
+or left generic to support a wide variety of games.
+
+#### Interface
+
+The `Kit` interface defines a few methods that must be implemented by any specific `Kit`. These include methods like
+getting the name of the `Kit`, setup and teardown methods for the `Kit` instance, and a `giveKit(LivingEntity)` method
+called whenever your game wishes to give the kit to a specific `LivingEntity` that has the kit (such as on game start,
+or respawns). The interface also has a `removeKit(LivingEntity)` method called when the kit is removed from
+a `LivingEntity`. All registered `Kit`s function as `Listener`s, and do not have to be explicitly
+registered/unregistered with Bukkit by you.
+
+#### Factory
+
+A `KitFactory` provides for the dynamic construction of instances of a specific `Kit`. To function, the factory needs to
+be registered in the `KitMechanic` using
+the `registerKitFactory(Class<K extends Kit<G extends MineplexGame>>, KitFactory<G, K>)` method. Once the factory has
+been registered, you can use the `KitMechanic` to construct instances of the `Kit` using
+the `constructKit(Class<K extends Kit<G extends MineplexGame>>, G)` method. All built-in `Kit`s that we provide have
+their factories pre-registered in the `KitMechanic`, so all you have to do is construct an instance when you want to use
+them. You do not need to create a `KitFactory` for your own custom `Kit`s, but you can if you'd like to. You will need
+to implement your own `KitFactory` if you plan to sell source-unavailable `Kit`s to other developers on our asset
+marketplace.
+
+# Examples
+## Player Kit
+
+Let's give each player some leather armor and a stone sword when they start, as well as our two abilities.
+
+```java
+// Since this kit doesn't need to do anything specific to Hunger Games,
+// we can make it generic, so we can reuse it!
+public class PlayerKit implements Kit<MineplexGame> {
+    // We want to give our two abilities to anyone with this kit
+    private final WeightlessAbility weightlessAbility;
+    private final SneakyAbility sneakyAbility;
+    private final AbilityMechanic abilityMechanic;
+    private final KitMechanic kitMechanic;
+    private final MineplexGame game;
+
+    public PlayerKit(final KitMechanic kitMechanic,
+                     final AbilityMechanic abilityMechanic,
+                     final MineplexGame game) {
+        weightlessAbility = new WeightlessAbility(abilityMechanic, game);
+        sneakyAbility = new SneakyAbility(abilityMechanic, game);
+        this.abilityMechanic = abilityMechanic;
+        this.kitMechanic = kitMechanic;
+        this.game = game;
+    }
+
+    @Override
+    public KitMechanic getKitMechanic() {
+        return kitMechanic;
+    }
+
+    @Override
+    public MineplexGame getGame() {
+        return game;
+    }
+
+    @Override
+    public String getName() {
+        return "Player";
+    }
+
+    @Override
+    public void setup(final MineplexGame game) {
+        abilityMechanic.registerAbility(WeightlessAbility.class, weightlessAbility);
+        abilityMechanic.registerAbility(SneakyAbility.class, sneakyAbility);
+    }
+
+    @Override
+    public void teardown() {
+        abilityMechanic.destroyAbility(WeightlessAbility.class);
+        abilityMechanic.destroyAbility(SneakyAbility.class);
+    }
+
+    @Override
+    public void giveKit(final LivingEntity livingEntity) {
+        if (!abilityMechanic.hasAbility(livingEntity, WeightlessAbility.class)) {
+            abilityMechanic.grantAbility(livingEntity, WeightlessAbility.class);
+        }
+
+        if (!abilityMechanic.hasAbility(livingEntity, SneakyAbility.class)) {
+            abilityMechanic.grantAbility(livingEntity, SneakyAbility.class);
+        }
+
+        final EntityEquipment equipment = livingEntity.getEquipment();
+        equipment.setHelmet(new ItemStack(Material.LEATHER_HELMET));
+        equipment.setChestplate(new ItemStack(Material.LEATHER_CHESTPLATE));
+        equipment.setLeggings(new ItemStack(Material.LEATHER_LEGGINGS));
+        equipment.setBoots(new ItemStack(Material.LEATHER_BOOTS));
+        equipment.setItemInMainHand(new ItemStack(Material.STONE_SWORD));
+    }
+
+    @Override
+    public void removeKit(final LivingEntity livingEntity) {
+        if (abilityMechanic.hasAbility(livingEntity, WeightlessAbility.class)) {
+            abilityMechanic.removeAbility(livingEntity, WeightlessAbility.class);
+        }
+
+        if (abilityMechanic.hasAbility(livingEntity, SneakyAbility.class)) {
+            abilityMechanic.removeAbility(livingEntity, SneakyAbility.class);
+        }
+    }
+}
+ ```

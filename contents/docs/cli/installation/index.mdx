@@ -1,0 +1,38 @@
+---
+title: CLI Installation
+description: Instructions to install the Studio CLI
+---
+
+The Mineplex Studio CLI is distributed as a pre-built binary file for Windows, Mac, and Linux. 
+
+You can download the Studio CLI for your platform:
+<CardGrid>
+  <Card
+    title="Windows"
+    subtitle="Download"
+    variant="small"
+    href="https://public-mineplex-content.s3.amazonaws.com/studio-cli-win.exe"
+    external="true"
+  />
+  <Card
+    title="Mac"
+    subtitle="Download"
+    variant="small"
+    href="https://public-mineplex-content.s3.amazonaws.com/studio-cli-macos"
+    external="true"
+  />
+  <Card
+    title="Linux"
+    subtitle="Download"
+    variant="small"
+    href="https://public-mineplex-content.s3.amazonaws.com/studio-cli-linux"
+    external="true"
+  />
+</CardGrid>
+
+You may wish to rename the Studio binary file and add it to your path or project directory. In our documentation, we use the `studio` command, which references a version of the binary file that has been added to the system path.
+
+On a Windows system, you can add executables to the system path from the Environment Variables menu in the Control Panel. On a Mac or Linux system, you can add executables to the system path by editing the `~/.bashrc` or `~/.zshrc` file.
+
+Note that there are peer dependencies to the Studio CLI. Specifically, you must have the GitHub CLI installed (as well as Java to fully utilize optional CLI functions). 
+To validate your system setup, run the `studio check` command in your terminal.

@@ -1,0 +1,28 @@
+---
+title: Party Module
+description: How to use the Mineplex Studio Party Module.
+---
+
+# Party Module
+
+ The Party Module is one of the built-in Studio Modules that allows you to query whether players in your game are in a party, and determine who is in the party with them. These methods are solely for you to integrate our parties into your games. All party functionality is handled internally by the SDK and requires no further implementation on your end. To fetch a party using its ID, use the Party Module method `getPartyById(String)`. To fetch the party of a given player if one exists, use the Party Module method `getPartyOfPlayer(String)`.
+
+## Party Data
+ Once you've retrieved a party, you can access its ID, its leader, and all online players in the party.
+
+# Example
+ Let's say we are making an open-world game where players can use the Party system to team up. We don't want to allow players in the same Party to hurt one another, so we integrate with the Party module.
+ ```java
+ public boolean canDamage(final Player damager, final Player victim) {
+     final Optional<Party> damagerParty = partyModule.getPartyOfPlayer(damager);
+     final Optional<Party> victimParty = partyModule.getPartyOfPlayer(victim);
+
+     // If neither player is in a party, they can't be in the same party
+     if (damagerParty.isEmpty() || victimParty.isEmpty()) {
+         return true;
+     }
+
+     // If the players are in one party, they can't hurt one another
+     return !damagerParty.get().getPlayers().contains(victim);
+ }
+ ```

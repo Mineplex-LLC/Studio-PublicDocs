@@ -1,0 +1,27 @@
+---
+title: Command Module
+description: How to use the Mineplex Studio Command Module.
+---
+
+The Command Module is one of the built-in Studio Modules that allows you to dynamically register and
+unregister commands from the Bukkit CommandMap.
+
+# Examples
+
+## Registering Command
+ Let's say we want to register our new command!
+ ```java
+ public void register() {
+    Command command = new MyCommand();
+    commandModule.register("fallbackPrefix", command);
+ }
+ ```
+
+## Unregistering Command
+ Lets unregister our command!
+ ```java
+ public void cleanup(final Player player) {
+    // Pass the command instance we have created earlier.
+    commandModule.unregister(command);
+ }
+ ```

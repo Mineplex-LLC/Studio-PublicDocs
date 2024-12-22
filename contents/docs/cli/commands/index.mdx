@@ -1,0 +1,115 @@
+---
+title: Command-Line Interface (CLI) Reference Guide
+description: This page contains a reference guide to all commands in the Studio CLI.
+---
+
+## Commands
+
+### `studio check`
+This command validates your local environment and ensures that you have all the necessary dependencies (such as the GitHub CLI) installed. 
+You can also view your current authentication status by running `studio check`.
+
+
+### `studio login`
+To use the CLI, you must log in to your Mineplex Studio Partner account. This is separate from your in-game account, and should be created from our website at [studio.mineplex.com](https://studio.mineplex.com).
+
+Then, you can run a command like `studio login -u example@example.com -p testpassword` to log in to your account.
+
+After logging in, the Studio CLI stores a long-lived authentication token in your system home directory with the file name `.mineplex-studio-credentials`. 
+
+You should generally never need to access or manage this manually, and should use the `logout` command to log out and invalidate existing tokens rather than deleting this file directly.
+
+
+### `studio logout`
+To log out of your account, run `studio logout`. This invalidates your token and any active sessions, and deletes the authentication token from your system home directory.
+
+
+### `studio create-project`
+You can run this command to create a Studio project. This will also create a boilerplate project in your current directory, and a GitHub repository
+for your project. By default, the repository that the Studio CLI creates will be private, and will include an Actions secret for Studio deployments. 
+You can run `studio help create-project` for more information on the command.
+
+There are several required arguments for this command:
+- `--name`: The name of your project. This should typically be a case-insensitive name like `cake-wars`.
+- `--repository`: The name of the GitHub repository (which will be created in GitHub by the Studio CLI). This must include your GitHub username or GitHub organization name, separated by a slash. For example, `Mineplex-LLC/CakeWars`.
+
+If you wish to further customize your project, you may also append the following optional arguments:
+- `--description`: A description of your project. This will be used in the Studio control plane and is visible to your collaborators from our web interface.
+- `--groupId`: The Gradle group ID for your project. This is conventionally a reverse domain name, such as `com.mineplex`.
+- `--artifactId`: The Gradle artifact ID for your project. This is conventionally the name of your project without any special characters, such as `cakewars`.
+
+A full example of this command is `studio create-project --name CakeWars --repository Mineplex-LLC/CakeWars --description "A fun game!" --groupId com.mineplex --artifactId cakewars`.
+
+After you run this command, the Studio CLI automatically:
+1. Creates a private GitHub repository in the `Mineplex-LLC` org with the name `CakeWars` and clones it to your current working directory.
+2. Creates a Studio project within the Mineplex control plane with the name `CakeWars` and description `"A fun game!"`.
+3. Creates a deployment token for the project with the Mineplex control plane, and uploads it to the `CakeWars` GitHub repository as a secret.
+4. Generates and downloads a boilerplate project from the Mineplex control plane, and places it in your local repo (but does not commit or push it).
+
+### `studio list-projects`
+This command lists all of your Studio projects. It will display the name, repository, and description of each project.
+
+### `studio build`
+Builds the project in the working directory into a plugin JAR using the default Studio CLI settings and Gradle integration. 
+
+### `studio start`
+This command starts a Development Container for your project on the Mineplex staging network. It will automatically build the project in the working directory into a plugin JAR and watches the file system to alert you when changes are ready for hotswap. 
+
+Using Development Containers allows you to test your code in a production-like environment. After running this command, note the IP address that it prints to the console. You can connect to this IP address from your Minecraft client to test your project.
+
+For security, development containers always have a player allowlist based on account UUIDs. You can manage the allowlist after running `studio start` for the first time, and can also save it to disk to avoid manually re-entering after each restart.
+
+Optional flags:
+- `--no-jar-build`: skips the automatic JAR build step, which may be useful if you have already built the plugin file or if you don't want to use the CLI's default Gradle integration.
+- `--plugin-path`: the relative path to the built plugin JAR file for your project; defaults to the JAR built by the CLI (using Gradle).
+
+After you run `studio start`, the CLI will continue to listen for additional commands that control your Development Container. These commands are:
+- `r`: Re-upload project assets and restart the Minecraft game process
+- `r-hard`: Forcefully restart the entire container (equivalent to `studio stop && studio start`)
+- `l`: Retrieve game process logs
+- `s`: Shutdown the running container fully (equivalent to `studio stop`)
+- `allowlist [add/remove] [player UUID]`: Add or remove a player by UUID to the container allowlist
+- `allowlist list`: Print a list of all players currently on the container allowlist
+- `allowlist save`: Save the current allowlist locally (per-project); it will be automatically restored on container startup
+- `allowlist clear`: Remove all existing players from the container allowlist
+
+If you kill the CLI process, the Development Container will stay alive in the background. By default, containers live for a two-hour time duration, after which they are automatically cleaned up. You can only have one container running at a given time per Studio account.
+
+### `studio stop`
+Forcefully shut down a running container. This can be useful if your container enters an unexpected state and is unresponsive to other commands, but it is generally faster to use the `r` command on a running container to hotswap new code and assets during development.
+
+## Organization Management
+Studio Organizations are groups of accounts that share projects and subscriptions. They are generally used to represent groups of developers working on the same game. Members of an Organization can have one of three roles:
+- Member: can perform read-only actions and use Development Containers
+- Admin: all the permissions of a Member, plus user management rights
+- Owner: all the permissions of an Admin, and cannot be removed from the Organization or demoted
+
+### `studio list-orgs`
+List the Organizations your account is authorized to act on.
+
+### `studio create-org --name [MyOrganization]`
+Create a Studio Organization with the specified name. Note that names are globally unique and cannot be changed after the organization is created.
+
+### `studio org-add-user --org [MyOrganization] --username [SomeOtherDeveloper]`
+Add an existing Studio account to the specified organization.
+
+### `studio org-list-users --org [MyOrganization]`
+List all of the users who are in the specified organization.
+
+### `studio org-remove-user --org [MyOrganization] --username [SomeOtherDeveloper]`
+As an Admin or Owner, remove the specified user from the organization.
+
+### `studio org-promote-user --org [MyOrganization] --username [SomeOtherDeveloper]`
+As an Admin or Owner, promote the specified Member to an Admin.
+
+### `studio org-demote-user --org [MyOrganization] --username [SomeOtherDeveloper]`
+As an Admin or Owner, demote the specified Admin to a Member.
+
+### `studio org-redeem-promo-code --org [MyOrganization] --code [MyPromoCode]`
+As an Admin or Owner, redeem a Mineplex-provided promo code for beta functionality or free or discounted subscriptions.
+
+### `studio org-transfer-project --org [MyOrganization]`
+Transfer the project within the current working directory to be owned by the specified Organization.
+
+### `studio org-list-projects --org [MyOrganization]`
+List the projects owned by the specified Organization.

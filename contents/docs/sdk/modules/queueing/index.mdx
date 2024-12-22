@@ -1,0 +1,195 @@
+---
+title: Queue Module
+description: How to use the Mineplex Studio Queue Module.
+---
+
+The Queue Module is a key Mineplex Studio component that allows you to manage queues for players to join games. This module supports both dynamic and static game allocations and provides various methods to control queueing behavior. With it, you can build a centralized hub, facilitating player flow across different games in your setup. However, queuing a player does not guarantee immediate transfer, as this depends on the matchmaking status of the target game.
+
+## Queuing Methods
+
+The following methods can be used to manage player queues in your games:
+
+### 1. `enqueuePlayer(Player player, String gameId)`
+Queues a player for a dynamically allocated game. This method is useful for games that are created on-demand.
+
+- **Parameters**:
+    - `player`: The player to queue.
+    - `gameId`: The identifier of the game or game tag.
+- **Returns**: A `CompletableFuture<Void>` that completes when the player is enqueued.
+
+#### Example
+```java
+public void queueForGame(Player player, String gameId) {
+    queuingModule.enqueuePlayer(player, gameId).thenAccept(unused -> {
+        player.sendMessage("You have been queued for " + gameId);
+    }).exceptionally(error -> {
+        player.sendMessage("Queue failed: " + error.getMessage());
+        return null;
+    });
+}
+```
+
+### 2. `enqueuePlayer(Player player, String gameId, String commonName)`
+Queues a player for a statically allocated game, based on a common name. This is useful for games that are permanently available.
+
+- **Parameters**:
+    - `player`: The player to queue.
+    - `gameId`: The identifier of the game.
+    - `commonName`: The common name associated with the server to move to.
+- **Returns**: A `CompletableFuture<Void>` that completes when the player is enqueued.
+
+#### Example
+```java
+public void queueForStaticGame(Player player, String gameId, String commonName) {
+    queuingModule.enqueuePlayer(player, gameId, commonName).thenAccept(unused -> {
+        player.sendMessage("You have been queued for " + commonName);
+    }).exceptionally(error -> {
+        player.sendMessage("Queue failed: " + error.getMessage());
+        return null;
+    });
+}
+```
+
+### 3. `dequeuePlayer(Player player)`
+Removes a player from the queue they are currently in.
+
+- **Parameters**:
+    - `player`: The player to remove from the current queue.
+- **Returns**: A `CompletableFuture<Void>` that completes when the player is dequeued.
+
+#### Example
+```java
+public void leaveQueue(Player player) {
+    queuingModule.dequeuePlayer(player).thenAccept(unused -> {
+        player.sendMessage("You have been removed from the queue.");
+    });
+}
+```
+
+### 4. `getPlayerQueueStatus(Player player)`
+Retrieves the queue status for a player.
+
+- **Parameters**:
+  - `player`: The player to check.
+- **Returns**: A `CompletableFuture<GetQueueStatusResponse>` containing the player's queue status.
+
+```java
+public void checkQueueStatus(Player player) {
+    queuingModule.getPlayerQueueStatus(player).thenAccept(status -> {
+        player.sendMessage("Queue status: " + status.getStatus());
+    });
+}
+```
+
+### 5. `returnLobby(Player player)`
+Returns a player to the main lobby, removing them from any queues or active games.
+
+- **Parameters**:
+    - `player`: The player to return to the lobby.
+
+```java
+public void returnToLobby(Player player) {
+    queuingModule.returnLobby(player);
+    player.sendMessage("You have been returned to the lobby.");
+}
+```
+
+### 6. `retainPlayer(Player player)`
+
+Keeps a player in their current queue, avoiding entry into specific game tags. This is useful when a player wants to continue playing your mode rather than playing the tag rotation.
+
+- **Parameters**:
+    - `player`: The player to retain.
+- **Returns**: A `CompletableFuture<Void>` that completes once the player is retained
+
+```java
+public void keepPlayerInQueue(Player player) {
+    queuingModule.retainPlayer(player).thenAccept(unused -> {
+        player.sendMessage("You will stay in Micro Battles.");
+    });
+}
+```
+
+### 7. `requeuePlayer(Player player)`
+Re-queues a player based on their previous queue choice, making it easy for them to play again without manual selection.
+
+- **Parameters**:
+    - `player`: The player to requeue.
+- **Returns**: A `CompletableFuture<Void>` that completes once the player is requeued.
+
+#### Example
+```java
+public void requeuePlayer(Player player) {
+    queuingModule.requeuePlayer(player).thenAccept(unused -> {
+    player.sendMessage("You have been requeued.");
+});
+}
+```
+
+### 8. `joinedThroughTag(Player player)`
+
+Checks if a player joined the current game mode via a tag. Useful for prompting people to re-queue for a tag instead of your own mode.
+
+- **Parameters**:
+    - `player`: The player to check.
+- **Returns**: `true` if the player joined through any tag, otherwise `false`.
+
+#### Example
+```java
+public boolean didJoinThroughTag(Player player) {
+    return queuingModule.joinedThroughTag(player);
+}
+```
+
+### 9. `joinedThroughTag(Player player, String tag)`
+Checks if a player joined the current game mode using a specific tag, allowing you to trigger different behaviour (e.g. rewards to incentivise people to stick with your game).
+
+- **Parameters**:
+    - `player`: The player to check.
+    - `tag`: The tag to verify as the player's entry method.
+- **Returns**: `true` if the player joined through the specified tag, otherwise `false`.
+
+#### Example
+```java
+public boolean didJoinThroughSpecificTag(Player player, String tag) {
+    return queuingModule.joinedThroughTag(player, tag);
+}
+```
+
+---
+## Queue Responses
+Queue operations may result in the following responses:
+
+- `SUCCESS` - Player successfully queued for the target game.
+- `FAIL_ALREADY_QUEUED` - Player is already queued for a game.
+- `FAIL_IN_PARTY` - Player cannot queue because they are in a party but not the leader.
+- `FAIL_OTHER` - Queue request failed for another reason.
+
+#### Example: Interactive Queue with NPC
+In a custom hub, players can interact with NPCs to join a game queue.
+
+```java
+public void interactWithNPC(Player player, GameNPC npc) {
+    if (queuingModule.getPlayerQueueStatus(player).isQueued()) {
+        queuingModule.dequeuePlayer(player);
+    } else {
+        queuingModule.enqueuePlayer(player, npc.getGameId());
+    }
+}
+```
+
+## Tag Queue
+
+The following tags (or category) are currently supported for tag queueing: `Arcade`
+
+**Guidelines for all games in supported tag queues:**
+- Partners should prompt people to re-queue for the tag on death/elimination.
+- Not block the queue flow in any way (e.g. re-queueing for your game without affirimitive action from player)
+- Use the `requeue` method for re-queueing people rather than `enqueue`
+- Must support an option in hotbar to return to the lobby before game start, or when a spectator (clock or bed item).
+
+**If your game is tagged or has the `Arcade` category, it must also meet certain conditions:**
+- Must not kick to hub after game end (requeue instead), avoid closing server until players are empty (or server is killed), save stats/data on game end (before re-queue) to avoid race conditions.
+- Must have a hotbar item to re-queue for Arcade if joining via Arcade tag
+
+Failing to abide by a tag's guidelines will result in the tag being removed and the game being blocked from using the tag until approval is given.

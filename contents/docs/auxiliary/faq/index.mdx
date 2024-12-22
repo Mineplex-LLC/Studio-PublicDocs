@@ -1,0 +1,20 @@
+---
+title: Frequently Asked Questions
+description: A set of frequently asked questions and answers.
+---
+
+### Custom Lobbies and Hubs
+The following guidance applies to custom lobbies and hubs that exist outside of your primary game mode and serve the primary purpose of hosting players and re-queueing them for other games:
+- This is discouraged. We want to flatten the queueing within the Studio as much as possible, such that players queue directly for your game from the Mineplex Hub. We are working on figuring out a way for your purchase offerings and different game modes to be embedded or exposed within our lobby.
+- Please consider the genuine need for a secondary lobby: you should only implement this if it's of significant importance to your game functionality, for example - a cosmetic system that cannot be represented in games, only a Lobby. We will not allow lobbies just for linking games together and letting people talk.
+- However, if you need a second lobby, you should implement two games behind the scenes. These should probably be in the same game namespace. For example, `CakeWars-Lobby` and `CakeWars-Game` in the `Mineplex` namespace. In most cases, the lobby should probably be a relatively empty project that uses `DYNAMIC` allocation.
+
+### Manual Game Maintenance
+The following guidance applies for manual game support operations, such as restarting "unhealthy" games:
+- We will be adding a health check mechanism that you can implement inside the game code. We will call this regularly and initiate restart events if an unhealthy signal is returned. More details on this should be released soon.
+- If you have an additional need to restart a game, adjust server settings, or perform other manual operational interventions, please reach out to our support team.
+- If you will be using our provisioned databases (such as MySQL, managed by Mineplex), you need to follow best-practices for automatically running migrations on game startup (consider something like Flyway or Liquibase). Similarly, you need to ensure backwards compatibility with changes since we may run different versions of your game at the same time during update events.
+
+### Manually Transferring Players
+The following guidance applies for questions around manually transferring players between server instances and games:
+- We will provide an API you can poll that returns a list of active games in a namespace. You can manually transfer players between these with a piece of code. This should be used sparingly and intentionally, as we expect most player transfers to occur via our matchmaking system.

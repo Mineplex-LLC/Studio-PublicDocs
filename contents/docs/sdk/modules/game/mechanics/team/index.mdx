@@ -1,0 +1,27 @@
+---
+title: Team Game Mechanic
+description: 
+---
+
+### Team Mechanic
+
+The `TeamMechanic` is one of the built-in `GameMechanic`s bundled with the Studio SDK. This mechanic allows you to
+create `GameTeam`s, assign them names, and have `LivingEntity`s join the created teams. Additionally, `TeamAssigner`s
+allow for the assignment of groups to available teams based on predefined behavior using
+the `assignTeams(Collection<LivingEntity>, TeamAssigner)` method.
+
+#### Team Assigner Factory
+
+A `TeamAssignerFactory` provides for the dynamic construction of instances of a specific `TeamAssigner`. To function,
+the factory needs to be registered in the `TeamMechanic` using
+the `registerTeamAssignerFactory(Class<T extends TeamAssigner>, TeamAssignerFactory<T>)` method. Once the factory has
+been registered, you can use the `TeamMechanic` to construct instances of the `TeamAssigner` using
+the `constructTeamAssigner(Class<T extends TeamAssigner>)` method. All built-in `TeamAssigner`s that we provide have
+their factories pre-registered in the `TeamMechanic`, so all you have to do is construct an instance when you want to
+use them. You do not need to create a `TeamAssignerFactory` for your own custom `TeamAssigner`s, but you can if you'd
+like to. You will need to implement your own `TeamAssignerFactory` if you plan to sell source-unavailable `TeamAssigner`
+s to other developers on our asset marketplace. We currently provide two built-in `TeamAssigner`s:
+
+- `SingleTeamAssigner` - groups all `LivingEntity`s into the single team in the `TeamMechanic`
+- `EvenTeamsAssigner` - assigns all `LivingEntity`s to teams in the most even way possible. Can be configured
+  with `setShouldGroupParties(boolean)` to attempt to put parties on the same team if they fit

@@ -1,0 +1,653 @@
+---
+title: Game Engine Module
+description: How to use the Mineplex Studio Game Engine Module.
+---
+
+The Game Engine Module is one of the built-in Studio Modules that allows you to create immersive and dynamic gameplay
+experiences within Minecraft. Studio games are designed to be modular, allowing you to make amazing gameplay mechanics
+that you can take with you from game to game, or even sell to other developers on our asset marketplace.
+
+## Game Cycle
+
+If you want to create a project where multiple games play one after another, you should create your own
+custom `GameCycle`. To do so, you need to create a class that implements the `GameCycle` interface. You'll need to
+determine how the `hasNextGame()` and `createNextGame()` methods should function. In some cases, you may want to cycle
+through a specific number of games, while in others you may want the cycle to go on forever. Either way, you can control
+it via your implementation of `hasNextGame()`. Your implementation of `createNextGame()` will determine what game is up
+next, and will need to handle constructing the next game up. You can also have `getLobbyWorld()` return an
+actual `MineplexWorld` if you want the players to be teleported to a lobby world in between games. By default, there is
+no `GameCycle`, and a new game will not be created when the previous game ends.
+
+## Game State
+
+The state of a `MineplexGame` indicates what phase in the game lifecycle it is currently in. The `GameState` of
+a `MineplexGame` can be retrieved using the `getGameState()` method, and set using the `setGameState(GameState)` method.
+
+Built in options are:
+- `PREPARING` - When the `MineplexGame` is first being setup after construction
+- `PRE_START` - When the `MineplexGame` is preparing to start after all start conditions are met. This can be used for
+  things like countdowns or other starting behaviors. This is the default state in which the Matchmaker will flag your
+  game server as available for players
+- `STARTED` - When the `MineplexGame` has officially started
+- `ENDED` - When the `MineplexGame` is completed after the end condition is met. This can be used for things like win
+  rooms or other end game behavior
+
+## MineplexGame Interface
+
+The `MineplexGame` interface is the primary interface for any game playable on the Studio. To make your own game, you'll
+need to create a class for it that implements the `MineplexGame` interface. This class will define the core
+functionality and gameplay, and is where you will pull in all the `GameMechanic`s that you want to incorporate. To
+properly implement the `MineplexGame` interface, you will need to provide implementations for several methods. You will
+need to implement the `getName()` method, which should be the `String` name for your game. You also need to implement
+the `getGameModule()` method. You'll need to supply some way for your game to return the `MineplexGameModule` within
+this method, either by passing the module in the game's constructor, or another way of your choosing. Next, you'll need
+to implement the `getGameState()` and `setGameState(GameState)` methods. These can either actually modify your game's
+state, or simply return `STARTED` for games that do not intend to support a full game lifecycle. Inside
+the `setGameState` method, you should additionally fire the `MineplexGameStateChangeEvent` and propagate that new state
+to each of the `GameMechanic`s your game is using via the `GameMechanic` method `onStateChange(GameState, GameState)`
+prior to actually changing the `GameState` if you intend to do so. You will need to manage the conditions that trigger
+game lifecycle changes yourself as well. Finally, you must implement the `setup()` and `teardown()` methods, to handle
+allocating and deallocating assets for the game. This is where you should create, configure, and destroy any of
+the `GameMechanic`s you want to use.
+
+You will need to handle registering and unregistering of your `MineplexGame` as a `Listener` yourself as well, based on
+your own conditions.
+
+There is a sub-interface, `SingleWorldMineplexGame`, that you may also choose to implement rather than just
+the `MineplexGame` interface. This requires all the same implementations as a standard `MineplexGame`, with the
+additional required method implementation of `getGameWorld()`, which should return the `MineplexWorld` serving as the
+single world that game will take place within.
+
+## Game Mechanics 
+
+`GameMechanic`s are discrete elements of gameplay that create a full game when all operating together. These mechanics
+can be tightly coupled to a specific `MineplexGame`, or left generic to support a wide variety of games. We provide
+several built-in `GameMechanic`s with the Studio SDK, but you can also make your own mechanics to customize your game
+projects. You can even create unique `GameMechanic`s and sell them to other developers on our asset
+marketplace! `GameMechanic`s should register and unregister themselves as `Listener`s in their setup and teardown
+methods, which should be called manually when an owning `MineplexGame` initializes and cleans them up.
+
+### Game Mechanic Factory
+
+A `GameMechanicFactory` provides for the dynamic construction of instances of a specific `GameMechanic`.
+To function, the factory needs to be registered in the `MineplexGameMechanicFactory`
+using the `<M extends GameMechanic<?>> register(Class<M> gameMechanic, Supplier<M> mechanicSupplier)` method. 
+Once the factory has been registered, you can use the `MineplexGameMechanicFactory`
+to construct instances of the `GameMechanic` using the `construct(Class<M extends GameMechanic<?>>)` method.
+All built-in `GameMechanic`s that we provide have their factories pre-registered in the `MineplexGameMechanicFactory`,
+so all you have to do is construct an instance when you want to use them.
+You do not need to create a `GameMechanicFactory` for your own custom `GameMechanic`s, but you can if you'd like to.
+You will need
+to implement your own `GameMechanicFactory` if you plan to sell source-unavailable `GameMechanic`s to other developers
+on our asset marketplace.
+
+### Game World Selector Mechanic
+
+The `GameWorldSelectorMechanic` is one of the built-in `GameMechanic`s bundled with the Studio SDK. This mechanic will
+randomly select a map from the game map templates included in your project, load the `MineplexWorld` from the template,
+and then provide it to the `MineplexGame` using the mechanic. Once the `MineplexGame` cleans itself up,
+the `GameWorldSelectorMechanic` will unload the `MineplexWorld` and clean it up as well.
+
+### Custom Game Mechanics
+
+Implementing your own custom `GameMechanic`s is easy to do: just create a new class that implements the `GameMechanic`
+interface, and determine if you want a mechanic that is coupled to a game, for example `BossMechanic<BossGame>`, or a
+more generic mechanic, such as `SpectatorMechanic<MineplexGame>`. In your custom class, you will need to implement
+the `setup(Game)`, `teardown()`, and `onStateChange(GameState, GameState)` methods to define the custom behavior of your
+mechanic for each of those cases.
+
+## Game Structure
+
+Since this is a game that takes place in one game world, let's base it on the `SingleWorldMineplexGame`.
+
+```java
+public class HungerGames implements SingleWorldMineplexGame {
+    private final JavaPlugin myProjectPlugin;
+    private final MineplexGameModule gameModule;
+    private GameState gameState;
+    @Getter
+    private final List<LivingEntity> players = new ArrayList<>();
+
+    public HungerGames(final JavaPlugin myProjectPlugin, final MineplexGameModule gameModule) {
+        this.myProjectPlugin = myProjectPlugin;
+        this.gameModule = gameModule;
+        this.gameState = GameState.PREPARING;
+    }
+
+    @Override
+    public String getName() {
+        return "Hunger Games";
+    }
+
+    @Override
+    public MineplexGameModule getGameModule() {
+        return gameModule;
+    }
+
+    @Override
+    public GameState getGameState() {
+        return gameState;
+    }
+
+    @Override
+    public void setGameState(GameState gameState) {
+        Bukkit.getPluginManager().callEvent(new MineplexGameStateChangeEvent(this,
+                this.gameState, gameState));
+        this.gameState = gameState;
+
+        // When the game starts, teleport every player to a random spawn point
+        if (this.gameState == GameState.STARTED) {
+            final List<Location> spawns = getGameWorld().getDataPoints("SPAWN");
+            players.forEach(player -> {
+                final Location spawn = spawns.get(ThreadLocalRandom.current().nextInt(spawns.size()));
+                player.teleport(spawn);
+            });
+        } else if (this.gameState == GameState.ENDED) {
+            setGameState(GameState.CLEANING_UP);
+        } else if (this.gameState == GameState.CLEANING_UP) {
+            teardown();
+        }
+    }
+
+    @Override
+    public void setup() {
+        Bukkit.getPluginManager().registerEvents(this, myProjectPlugin);
+    }
+
+    @Override
+    public void teardown() {
+        HandlerList.unregisterAll(this);
+        players.clear();
+        gameModule.setCurrentGame(null);
+    }
+
+    @Override
+    public MineplexWorld getGameWorld() {
+        return null;
+    }
+
+    @EventHandler
+    public void onDeath(final PlayerDeathEvent event) {
+        // If the game is currently ongoing
+        if (gameState == GameState.STARTED) {
+            // If the dead player was playing this game
+            if (players.remove(event.getPlayer())) {
+                // Put dead players in spectator mode
+                event.getPlayer().setGameMode(GameMode.SPECTATOR);
+                // If there is one player or less, end the game
+                if (players.size() <= 1) {
+                    setGameState(GameState.ENDED);
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onJoin(final PlayerJoinEvent event) {
+        // Automatically add new players to the game
+        if (gameState == GameState.PRE_START) {
+            players.add(event.getPlayer());
+            // If 5 or more players are playing, start the game
+            if (players.size() >= 5) {
+                setGameState(GameState.STARTED);
+            }
+        }
+    }
+
+    @EventHandler
+    public void onQuit(final PlayerQuitEvent event) {
+        // If the game is currently ongoing
+        if (gameState == GameState.STARTED) {
+            // If the exiting player was playing this game
+            if (players.remove(event.getPlayer())) {
+                // Put exiting players in spectator mode
+                event.getPlayer().setGameMode(GameMode.SPECTATOR);
+                // If there is one player or less, end the game
+                if (players.size() <= 1) {
+                    setGameState(GameState.ENDED);
+                }
+            }
+        }
+    }
+}
+ ```
+
+Next, let's enable and configure the mechanics we want!
+
+## Game Mechanics
+
+For a very basic hunger games, we'll want
+the `KitMechanic`, `AbilityMechanic`, `GameWorldSelectorMechanic`, `LootChestMechanic`, and `TeamMechanic` with
+a `SingleTeamAssigner`. Let's take a look at how our `HungerGames` class changes to do this.
+
+```java
+ public class HungerGames implements SingleWorldMineplexGame {
+    private final JavaPlugin myProjectPlugin;
+    private final MineplexGameModule gameModule;
+    private final MineplexGameMechanicFactory gameMechanicFactory;
+    private GameState gameState;
+
+    @Getter
+    private final List<LivingEntity> players = new ArrayList<>();
+
+    private AbilityMechanic abilityMechanic;
+    private KitMechanic kitMechanic;
+    private GameWorldSelectorMechanic gameWorldSelectorMechanic;
+    private LootChestMechanic lootChestMechanic;
+    private TeamMechanic teamMechanic;
+
+    public HungerGames(final JavaPlugin myProjectPlugin, final MineplexGameModule gameModule, final MineplexGameMechanicFactory gameMechanicFactory) {
+        this.myProjectPlugin = myProjectPlugin;
+        this.gameModule = gameModule;
+        this.gameMechanicFactory = gameMechanicFactory;
+        this.gameState = GameState.PREPARING;
+    }
+
+    @Override
+    public String getName() {
+        return "Hunger Games";
+    }
+
+    @Override
+    public MineplexGameModule getGameModule() {
+        return gameModule;
+    }
+
+    @Override
+    default MineplexGameMechanicFactory getGameMechanicFactory() {
+        return gameMechanicFactory;
+    }
+
+    @Override
+    public GameState getGameState() {
+        return gameState;
+    }
+
+    @Override
+    public void setGameState(GameState gameState) {
+        Bukkit.getPluginManager().callEvent(new MineplexGameStateChangeEvent(this,
+                this.gameState,
+                gameState));
+        abilityMechanic.onStateChange(this.gameState, gameState);
+        kitMechanic.onStateChange(this.gameState, gameState);
+        gameWorldSelectorMechanic.onStateChange(this.gameState, gameState);
+        lootChestMechanic.onStateChange(this.gameState, gameState);
+        teamMechanic.onStateChange(this.gameState, gameState);
+        this.gameState = gameState;
+
+        // When the game starts, teleport every player to a random spawn point, assign teams, and give them the kit
+        if (this.gameState == GameState.STARTED) {
+            final List<Location> spawns = getGameWorld().getDataPoints("SPAWN");
+            players.forEach(player -> {
+                final Location spawn = spawns.get(ThreadLocalRandom.current().nextInt(spawns.size()));
+                player.teleport(spawn);
+
+                kitMechanic.grantKit(player, PlayerKit.class);
+            });
+            teamMechanic.assignTeams(players, teamMechanic.constructTeamAssigner(SingleTeamAssigner.class)
+                    .get());
+        } else if (this.gameState == GameState.ENDED) {
+            setGameState(GameState.CLEANING_UP);
+        } else if (this.gameState == GameState.CLEANING_UP) {
+            teardown();
+        }
+    }
+
+    @Override
+    public void setup() {
+        gameWorldSelectorMechanic = gameMechanicFactory.construct(GameWorldSelectorMechanic.class);
+        kitMechanic = gameMechanicFactory.construct(KitMechanic.class);
+        abilityMechanic = gameMechanicFactory.construct(AbilityMechanic.class);
+        lootChestMechanic = gameMechanicFactory.construct(LootChestMechanic.class);
+        teamMechanic = gameMechanicFactory.construct(TeamMechanic.class);
+
+        gameWorldSelectorMechanic.setup(this);
+        kitMechanic.setup(this);
+        abilityMechanic.setup(this);
+
+        // 60 seconds * 20 ticks per second
+        lootChestMechanic.setChestRefillDelay(60 * 20L);
+        lootChestMechanic.setChestDataPointKey("CHEST");
+        // Loot pool, with a minimum of 3 items per chest and a max of 9
+        lootChestMechanic.setChestLootPool(List.of(
+                new ItemStack(Material.IRON_SWORD),
+                new ItemStack(Material.DIAMOND_CHESTPLATE),
+                new ItemStack(Material.WOODEN_SWORD),
+                new ItemStack(Material.GOLDEN_APPLE),
+                new ItemStack(Material.CHAINMAIL_HELMET),
+                new ItemStack(Material.BREAD, 5),
+                new ItemStack(Material.EGG, 16),
+                new ItemStack(Material.SNOWBALL, 10),
+                new ItemStack(Material.DIAMOND_AXE)), 3, 9);
+        lootChestMechanic.setup(this);
+
+        teamMechanic.setup(this);
+        teamMechanic.registerTeam("Players", Component.text("Players"));
+
+        // Register our kit
+        kitMechanic.registerKit(PlayerKit.class, new PlayerKit(kitMechanic, abilityMechanic, this));
+
+        Bukkit.getPluginManager().registerEvents(this, myProjectPlugin);
+    }
+
+    @Override
+    public void teardown() {
+        HandlerList.unregisterAll(this);
+
+        kitMechanic.teardown();
+        abilityMechanic.teardown();
+        teamMechanic.teardown();
+        lootChestMechanic.teardown();
+        gameWorldSelectorMechanic.teardown();
+
+        players.clear();
+        gameModule.setCurrentGame(null);
+    }
+
+    @Override
+    public MineplexWorld getGameWorld() {
+        return gameWorldSelectorMechanic.getSelectedGameWorld();
+    }
+
+    @EventHandler
+    public void onDeath(final PlayerDeathEvent event) {
+        // If the game is currently ongoing
+        if (gameState == GameState.STARTED) {
+            // If the dead player was playing this game
+            if (players.remove(event.getPlayer())) {
+                // Put dead players in spectator mode and remove their kit
+                event.getPlayer().setGameMode(GameMode.SPECTATOR);
+                kitMechanic.removeKit(event.getPlayer(), PlayerKit.class);
+                // If there is one player or less, end the game
+                if (players.size() <= 1) {
+                    setGameState(GameState.ENDED);
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onJoin(final PlayerJoinEvent event) {
+        // Automatically add new players to the game
+        if (gameState == GameState.PRE_START) {
+            players.add(event.getPlayer());
+
+            // If 5 or more players are playing, start the game
+            if (players.size() >= 5) {
+                setGameState(GameState.STARTED);
+            }
+        }
+    }
+
+    @EventHandler
+    public void onQuit(final PlayerQuitEvent event) {
+        // If the game is currently ongoing
+        if (gameState == GameState.STARTED) {
+            // If the exiting player was playing this game
+            if (players.remove(event.getPlayer())) {
+                // Put exiting players in spectator mode and remove their kit
+                event.getPlayer().setGameMode(GameMode.SPECTATOR);
+                kitMechanic.removeKit(event.getPlayer(), PlayerKit.class);
+                // If there is one player or less, end the game
+                if (players.size() <= 1) {
+                    setGameState(GameState.ENDED);
+                }
+            }
+        }
+    }
+}
+ ```
+
+Let's try making a custom `GameMechanic` that makes players glow for a moment when they get hit.
+
+ ```java
+
+@AllArgsConstructor
+public class DamageGlowMechanic implements GameMechanic<HungerGames> {
+    private final HungerGames game;
+    private final JavaPlugin myProjectPlugin;
+
+    @Override
+    public void setup(final HungerGames game) {
+        Bukkit.getPluginManager().registerEvents(this, myProjectPlugin);
+    }
+
+    @Override
+    public void teardown() {
+        HandlerList.unregisterAll(this);
+    }
+
+    @Override
+    public void onStateChange(final GameState fromState, final GameState toState) {
+        // Nothing needs to be cleaned up on state change
+    }
+
+    // On damage, make players glow
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDamage(final EntityDamageEvent event) {
+        if (event.getEntity() instanceof Player player) {
+            // If the game is ongoing
+            if (game.getGameState() == GameState.STARTED) {
+                // If the player taking damage is in the game
+                if (game.getPlayers().contains(player)) {
+                    // Make them glow for a bit
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING,
+                            // 5 seconds * 20 ticks per second
+                            5 * 20,
+                            // No need for a higher level of glowing
+                            0,
+                            // Not an ambient effect
+                            false,
+                            // No need for particles
+                            false,
+                            // No need for the potion effect icon
+                            false));
+                }
+            }
+        }
+    }
+}
+ ```
+
+Now let's see what we have to do in our `HungerGames` class to use this mechanic.
+
+ ```java
+ public class HungerGames implements SingleWorldMineplexGame {
+    private final JavaPlugin myProjectPlugin;
+    private final MineplexGameModule gameModule;
+    private GameState gameState;
+
+    @Getter
+    private final List<LivingEntity> players = new ArrayList<>();
+
+    private AbilityMechanic abilityMechanic;
+    private KitMechanic kitMechanic;
+    private GameWorldSelectorMechanic gameWorldSelectorMechanic;
+    private LootChestMechanic lootChestMechanic;
+    private TeamMechanic teamMechanic;
+    private DamageGlowMechanic damageGlowMechanic;
+
+    public HungerGames(final JavaPlugin myProjectPlugin, final MineplexGameModule gameModule) {
+        this.myProjectPlugin = myProjectPlugin;
+        this.gameModule = gameModule;
+        this.gameState = GameState.PREPARING;
+    }
+
+    @Override
+    public String getName() {
+        return "Hunger Games";
+    }
+
+    @Override
+    public MineplexGameModule getGameModule() {
+        return gameModule;
+    }
+
+    @Override
+    public GameState getGameState() {
+        return gameState;
+    }
+
+    @Override
+    public void setGameState(GameState gameState) {
+        Bukkit.getPluginManager().callEvent(new MineplexGameStateChangeEvent(this,
+                this.gameState,
+                gameState));
+        abilityMechanic.onStateChange(this.gameState, gameState);
+        kitMechanic.onStateChange(this.gameState, gameState);
+        gameWorldSelectorMechanic.onStateChange(this.gameState, gameState);
+        lootChestMechanic.onStateChange(this.gameState, gameState);
+        teamMechanic.onStateChange(this.gameState, gameState);
+        damageGlowMechanic.onStateChange(this.gameState, gameState);
+        this.gameState = gameState;
+
+        // When the game starts, teleport every player to a random spawn point, assign teams, and give them the kit
+        if (this.gameState == GameState.STARTED) {
+            final List<Location> spawns = getGameWorld().getDataPoints("SPAWN");
+            players.forEach(player -> {
+                final Location spawn = spawns.get(ThreadLocalRandom.current().nextInt(spawns.size()));
+                player.teleport(spawn);
+
+                kitMechanic.grantKit(player, PlayerKit.class);
+            });
+            teamMechanic.assignTeams(players, teamMechanic.constructTeamAssigner(SingleTeamAssigner.class)
+                    .get());
+        } else if (this.gameState == GameState.ENDED) {
+            setGameState(GameState.CLEANING_UP);
+        } else if (this.gameState == GameState.CLEANING_UP) {
+            teardown();
+        }
+    }
+
+    @Override
+    public void setup() {
+        gameWorldSelectorMechanic = gameMechanicFactory.construct(GameWorldSelectorMechanic.class);
+        kitMechanic = gameMechanicFactory.construct(KitMechanic.class);
+        abilityMechanic = gameMechanicFactory.construct(AbilityMechanic.class);
+        lootChestMechanic = gameMechanicFactory.construct(LootChestMechanic.class);
+        teamMechanic = gameMechanicFactory.construct(TeamMechanic.class);
+        damageGlowMechanic = new DamageGlowMechanic(this, myProjectPlugin);
+
+        gameWorldSelectorMechanic.setup(this);
+        kitMechanic.setup(this);
+        abilityMechanic.setup(this);
+
+        // 60 seconds * 20 ticks per second
+        lootChestMechanic.setChestRefillDelay(60 * 20L);
+        lootChestMechanic.setChestDataPointKey("CHEST");
+        // Loot pool, with a minimum of 3 items per chest and a max of 9
+        lootChestMechanic.setChestLootPool(List.of(
+                new ItemStack(Material.IRON_SWORD),
+                new ItemStack(Material.DIAMOND_CHESTPLATE),
+                new ItemStack(Material.WOODEN_SWORD),
+                new ItemStack(Material.GOLDEN_APPLE),
+                new ItemStack(Material.CHAINMAIL_HELMET),
+                new ItemStack(Material.BREAD, 5),
+                new ItemStack(Material.EGG, 16),
+                new ItemStack(Material.SNOWBALL, 10),
+                new ItemStack(Material.DIAMOND_AXE)), 3, 9);
+        lootChestMechanic.setup(this);
+
+        teamMechanic.setup(this);
+        teamMechanic.registerTeam("Players", Component.text("Players"));
+
+        // Register our kit
+        kitMechanic.registerKit(PlayerKit.class, new PlayerKit(kitMechanic, abilityMechanic, this));
+
+        damageGlowMechanic.setup(this);
+
+        Bukkit.getPluginManager().registerEvents(this, myProjectPlugin);
+    }
+
+    @Override
+    public void teardown() {
+        HandlerList.unregisterAll(this);
+
+        damageGlowMechanic.teardown();
+        kitMechanic.teardown();
+        abilityMechanic.teardown();
+        teamMechanic.teardown();
+        lootChestMechanic.teardown();
+        gameWorldSelectorMechanic.teardown();
+
+        players.clear();
+        gameModule.setCurrentGame(null);
+    }
+
+    @Override
+    public MineplexWorld getGameWorld() {
+        return gameWorldSelectorMechanic.getSelectedGameWorld();
+    }
+
+    @EventHandler
+    public void onDeath(final PlayerDeathEvent event) {
+        // If the game is currently ongoing
+        if (gameState == GameState.STARTED) {
+            // If the dead player was playing this game
+            if (players.remove(event.getPlayer())) {
+                // Put dead players in spectator mode and remove their kit
+                event.getPlayer().setGameMode(GameMode.SPECTATOR);
+                kitMechanic.removeKit(event.getPlayer(), PlayerKit.class);
+                // If there is one player or less, end the game
+                if (players.size() <= 1) {
+                    setGameState(GameState.ENDED);
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onJoin(final PlayerJoinEvent event) {
+        // Automatically add new players to the game
+        if (gameState == GameState.PRE_START) {
+            players.add(event.getPlayer());
+
+            // If 5 or more players are playing, start the game
+            if (players.size() >= 5) {
+                setGameState(GameState.STARTED);
+            }
+        }
+    }
+
+    @EventHandler
+    public void onQuit(final PlayerQuitEvent event) {
+        // If the game is currently ongoing
+        if (gameState == GameState.STARTED) {
+            // If the exiting player was playing this game
+            if (players.remove(event.getPlayer())) {
+                // Put exiting players in spectator mode and remove their kit
+                event.getPlayer().setGameMode(GameMode.SPECTATOR);
+                kitMechanic.removeKit(event.getPlayer(), PlayerKit.class);
+                // If there is one player or less, end the game
+                if (players.size() <= 1) {
+                    setGameState(GameState.ENDED);
+                }
+            }
+        }
+    }
+}
+ ```
+
+Finally, let's look at how our game gets started!
+
+## Project Plugin Class
+
+ ```java
+ public class MyProject extends JavaPlugin {
+    private HungerGames game;
+
+    @Override
+    public void onEnable() {
+        final MineplexGameModule gameModule = MineplexModuleManager.getRegisteredModule(
+                MineplexGameModule.class);
+        game = new HungerGames(this, gameModule);
+        gameModule.setCurrentGame(game);
+        game.setGameState(GameState.PRE_START);
+    }
+
+    @Override
+    public void onDisable() {
+        game.teardown();
+    }
+}
+ ```

@@ -1,0 +1,55 @@
+---
+title: Custom Modules
+description: How to create custom Mineplex Studio Modules.
+---
+
+Creating your own custom `MineplexModule`s is almost effortless! Simply create a class that implements the `MineplexModule` interface, then register it as a `MineplexModule` when your project starts up using the `registerModule(T)` method in the `MineplexModuleManager`. Once your `MineplexModule` is registered, it is able to function as a `Listener`, and/or perform any custom behavior you decide to implement, either independently or in concert with other `MineplexModule`s.
+
+## MineplexModule Interface
+
+### `setup()` and `teardown()` Methods
+ These methods are responsible for creating and configuring any additional resources needed by your custom `MineplexModule`, and for destroying and cleaning up these resources, respectively. **NOTE: You do NOT need to register/unregister your `MineplexModule` as a `Listener` in these methods!**
+
+# Example
+
+## Creating a `MineplexModule`
+ Let's build a very basic custom module that registers an additional `Listener` with itself.
+ ```java
+ @MineplexModuleImplementation(MyCustomModule.class)
+ public class MyCustomModule implements MineplexModule {
+     private final JavaPlugin myProjectPlugin;
+     private MySignListener mySignListener;
+
+     public MyCustomModule(final JavaPlugin myProjectPlugin) {
+         this.myProjectPlugin = myProjectPlugin;
+     }
+
+     @Override
+     public void setup() {
+         mySignListener = new MySignListener();
+         Bukkit.getPluginManager().registerEvents(mySignListener, myProjectPlugin);
+     }
+
+     @Override
+     public void teardown() {
+         HandlerList.unregisterAll(mySignListener);
+         mySignListener = null;
+     }
+ }
+ ```
+
+## Registering your `MineplexModule`
+ Now that we've created our module, we need to register it from our project class.
+ ```java
+ public class MyProject extends JavaPlugin {
+     @Override
+     public void onEnable() {
+         MineplexModuleManager.getInstance().registerModule(new MyCustomModule(this));
+     }
+
+     @Override
+     public void onDisable() {
+         MineplexModuleManager.getInstance().destroyModule(MyCustomModule.class);
+     }
+ }
+ ```

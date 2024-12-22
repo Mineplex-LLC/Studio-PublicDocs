@@ -1,0 +1,153 @@
+---
+title: Chat Module
+description: How to use the Mineplex Studio Chat Module.
+---
+
+The Chat Module is one of the built-in Studio Modules that controls player chat. Through the Chat Module, player chat can be enabled or disabled in each channel, chat rendering formats can be set, and chat audiences can be controlled. The Chat Module additionally allows you to use our chat filter for aspects of your game that take in user input.
+
+## Chat Channels
+Chat Channels allow for the division of player chat into specific sections, each with their own configurable audience and rendering format. You can access some of our built in chat channels using the BuiltInChatChannel enum, or create your own by adding new classes or enums that implement the ChatChannel interface. Each chat channel must have an internal identifier that can be used by our chat reporting system.
+
+### Chat Channel Audience
+Chat Channels can be configured with different Audiences based on the player sending a message using the Chat Module's `setAudienceFunction(ChatChannel, Function<Player, Set<Audience>>)` method. This function is evaluated each time a message is sent by a player in the channel and used to generate the set of Audiences of the message. The `Audience` class is provided by the third party [Adventure API](https://docs.advntr.dev/index.html). More details can be found on their wiki as to how this works.
+
+### Chat Channel Rendering Format
+Chat Channel formatting is configurable in the Chat Module using the `setChatRenderer(ChatChannel, ChatRenderer)` method. The `ChatRenderer` class is provided by the third party [Adventure API](https://docs.advntr.dev/index.html). More details can be found on their wiki as to how this works.
+
+### Player Chat Channels
+There are two primary ways for you to manage player interaction via chat channels. Your first option is to use the `setChatChannel(Player, ChatChannel)` method, which sets the active chat channel that a player is currently chatting in. With this set, all the messages a player subsequently sends will be directed to that channel. Alternatively, you can use the `sendToChatChannel(ChatChannel, Player, Component)` method, which will manually send a message from a given player to the target chat channel, just as if the player had sent it themselves.
+
+### Chat Channel Silence
+Through the Chat Module methods `isChatSilenced(ChatChannel)` and `setChatSilence(ChatChannel, boolean)`, you can check if chat is enabled in a given chat channel, as well as enable or disable chatting in a given chat channel.
+
+## Chat Filter
+All Studio projects are required to run any user-provided text that will be displayed to other players through our chat filter. The Chat Module provides the method `isFiltered(String)`, which returns true if the String text is determined to be blocked by our chat filter. There is also a method `isFilteredAsync(String)` which can be used to query the chat filter asynchronously. When filtering text from the main thread, the asynchronous approach should always be used.
+
+# Examples
+
+## Chat Filtering
+Let's imagine that players are allowed to freely build in our game. In Minecraft, players are able to write text on signs that they place in the world. If players can place down signs, we have to make sure to run the sign text through the chat filter. This can be done in an event `Listener`.
+```java
+@EventHandler
+public void onSignEdit(final SignChangeEvent event) {
+    // Since a sign is essentially one message, we want to filter all its lines together.
+    final StringBuilder messageBuilder = new StringBuilder();
+    for (final Component line : event.lines()) {
+        // Since Signs can have component lines, we have to serialize each line into plain text to filter it.
+        messageBuilder.append(' ').append(PlainTextComponentSerializer.plainText().serialize(line));
+    }
+    // Since the SignChangeEvent is fired on the main thread, we have to check the filter asynchronously.
+    chatModule.isFilteredAsync(messageBuilder.toString())
+            .thenAccept(filtered -> {
+                // If the line wasn't filtered, we don't need to do anything
+                if (filtered) {
+                    Bukkit.getScheduler().runTask(myProjectPlugin, () -> {
+                        // Update the sign to clear its lines
+                        if (event.getBlock().getState() instanceof final Sign sign) {
+                            SignSide side = sign.getSide(event.getSide());
+                            final Component cleared = Component.text("");
+                            // Minecraft signs have only 4 lines
+                            for (int i = 0; i < 4; i++) {
+                                side.line(i, cleared);
+                            }
+                            // We want to update the sign without triggering a game physics update
+                            sign.update(false, false);
+                        }
+                    });
+                }
+            });
+}
+```
+
+## Chat Channels
+
+### Custom Channel
+For the next few examples, let's imagine we're creating a Factions game and we need a chat channel for allied Factions to talk to one another in private.
+```java
+public class AllyChatChannel implements ChatChannel {
+    @Override
+    public String getInternalIdentifier() {
+        return "mygame.allychat";
+    }
+}
+```
+
+### Audience
+Since we only want allies of the sender's Faction to see messages in Ally chat, we have to configure a custom audience for the channel.
+```java
+public void setupChannelAudiences() {
+    chatModule.setAudienceFunction(allyChatChannel, sender -> {
+        // Determine what Faction the sender is in
+        final Optional<Faction> senderFaction = getFaction(sender);
+        // If the sender has no Faction, there are no allies to see their chat
+        if (senderFaction.isEmpty()) {
+            return Set.of(Audience.audience(sender));
+        }
+        final Set<Audience> audiences = new HashSet<>();
+        // All the members of the sender's own Faction should be considered allies
+        audiences.add(Audience.audience(senderFaction.get().getMembers()));
+        // Create an audience for each allied Faction
+        for (final Faction allyFaction : senderFaction.get().getAllies()) {
+            audiences.add(Audience.audience(allyFaction.getMembers()));
+        }
+        return audiences;
+    });
+}
+```
+
+### Rendering
+We also want to give our custom chat channel a distinct format and style so the allies know who is chatting.
+```java
+private static final String CHAT_FORMAT = "<dark_green>[<faction>]</dark_green><display_name><green>: </green><message>";
+
+public void setupChannelRenderers() {
+    chatModule.setChatRenderer(allyChatChannel, (source, sourceDisplayName, message, viewer) -> {
+        final String factionName = getFaction(source).map(Faction::getName).orElse("");
+        // Renders chat in the format [Faction Name] Player Name: Message
+        return MiniMessage.miniMessage()
+                .deserialize(
+                        CHAT_FORMAT,
+                        Placeholder.parsed("faction", factionName),
+                        Placeholder.component("display_name", sourceDisplayName),
+                        Placeholder.component("message", message));
+    });
+}
+```
+
+### Player Channels
+Finally, we need a way for players to use the ally chat. Let's imagine we've created a `/allychat` command that can either include a message, or switch your chat to ally chat.
+```java
+@Override
+public boolean onCommand(@NotNull final CommandSender sender, @NotNull final Command command,
+                         @NotNull final String label, @NotNull final String[] args) {
+    if (sender instanceof final Player player) {
+        // If there are no command args, just set the active player chat channel to ally chat
+        if (args.length == 0) {
+            chatModule.setChatChannel(player, allyChatChannel);
+        } else {
+            // Concatenate all command args into one message
+            final StringBuilder messageBuilder = new StringBuilder(args[0]);
+            for (int i = 1; i < args.length; i++) {
+                messageBuilder.append(args[i]);
+            }
+            // Send the full message in ally chat without updating the player's active channel
+            chatModule.sendToChatChannel(allyChatChannel, player, Component.text(messageBuilder.toString()));
+        }
+    }
+    return true;
+}
+```
+
+### Silencing
+Let's imagine we are building a Hide and Seek game, and we don't want Hiders revealing each other's position to the Seekers. When a round starts, we can silence the global chat, so that Hiders and Seekers can't talk to one another.
+```java
+protected void startRound() {
+    chatModule.setChatSilence(BuiltInChatChannel.GLOBAL, true);
+}
+```
+Then, when the round ends, we want to allow the two teams to communicate with each other again, so we unsilence the global chat.
+```java
+protected void endRound() {
+    chatModule.setChatSilence(BuiltInChatChannel.GLOBAL, false);
+}
+```

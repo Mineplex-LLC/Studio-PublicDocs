@@ -1,0 +1,67 @@
+---
+title: Internationalization
+description: How to internationalize text strings in the Studio.
+---
+
+By releasing your game on the Mineplex Studio, you are gaining access to a global audience of players, all excited to
+try out what you've built. In order to make sure that all our players have the best possible experience, no matter where
+they're from, we've prioritized our internationalization system from the outset. While you are not required to make use
+of this system, you are highly encouraged to take advantage of it if you can. Your game's reach and playerbase will grow
+from making all players feel welcome!
+
+## Language Selection
+
+Our internationalization system integrates directly with the game client to perform language selection, meaning your
+players will automagically experience your game in the language they're already familiar with playing Minecraft in -
+assuming you've provided the necessary translations.
+
+## Language Mappings
+
+Language data files should stored as UTF-8 encoded `.properties` files in the `resource` directory of your project
+and loaded on application startup through the `I18NModule`.
+
+## API
+
+After loading the translations, you can use the `Component.translatable` method to create a translatable component.
+
+# Examples
+
+## Mappings
+
+Let's say we're internationalizing our application. In our `resource` directory, we need to create a mapping
+file, such as `MyMessages_en.properties` for English or `MyMessages_de.properties` for German.
+
+Our english translations inside `MyMessages_en.properties`
+ ```properties
+my_game.join.greeting=Hello there!
+ ```
+
+Our german translations inside `MyMessages_de.properties`
+ ```properties
+my_game.join.greeting=Hallo!
+ ```
+
+Lets load our new translations!
+
+```java
+public void loadTranslations() {
+    final I18NModule i18NModule = MineplexModuleManager.getRegisteredModule(I18NModule.class);
+    for (final Locale locale : i18NModule.getAvailableLocales()) {
+        final ResourceBundle bundle = ResourceBundle.getBundle("MyMessages", locale, UTF8ResourceBundleControl.get());
+        i18NModule.addTranslation(locale, bundle, true);
+    }   
+}
+```
+
+## API
+
+Now that we have our mapping, we can use it in our game code.
+
+ ```java
+private final Component greetingText = Component.translatable("my_game.join.greeting");
+
+@EventHandler
+public void onJoin(final PlayerJoinEvent event) {
+    player.sendMessage(greetingText);
+}
+ ```

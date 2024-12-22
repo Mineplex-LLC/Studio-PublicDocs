@@ -1,0 +1,150 @@
+---
+title: Data Storage Module
+description: How to use the Mineplex Studio Data Storage Module.
+---
+
+The Data Storage Module is one of the built-in Studio Modules that allows you to dynamically store and load structured objects and binary data objects in your project. The built-in Data Storage Module is a simple way to get started with key-value storage, has no additional cost, and scales globally with the rest of the Studio platform. For advanced use cases, it is also possible to allocate dedicated databases at an additional cost via the Managed Databases system.
+
+## Data Objects
+Each data object, whether structured or binary, consists of two components: the key of the data, which is a `String` field in the class annotated withthe `@DataKey` annotation and should be **unique** within the `DataCollection` represented by the class, and the body of the data. The data body isdynamic, allowing you to create objects that are as simple or as complicated as you need. Any data object class needs to implement either the`StorableBinaryData` interface or the `StorableStructuredData` interface, and must be annotated with the `@DataCollection` annotation. This classannotation should include a `name` argument containing the **unique** name of the data collection within your project namespace for all objects of thattype to be stored within.
+
+## Structured Data
+Structured data objects should be comprised of individual fields and represent fixed-format data, such as player faction membership data or objectives completed. As previously mentioned, one `String` field of the class should be a unique key for that specific object, and must be annotated with the `@DataKey` annotation.
+
+## Binary Data
+Binary data objects are representations of more complex and non-standardized data, such as player worlds or world slices, or block changes on top of a template. There should be one specific `String` field serving as a unique key annotated with the `@DataKey` annotation. The remainder of the class is up to you, but the interface requires that the class can be serialized to/from a ByteArrayInputStream via overriding the `open()` and `load(ByteArrayInputStream)` methods, respectively.
+
+## CRUD
+The CRUD methods provided in the Data Storage Module are as follows:
+- `store` - Store a data object in the remote storage system
+- `load` - Load a stored data object by key from the remote storage system
+- `exists` - Check whether a given key is associated with a data object in the remote storage system
+- `delete` - Deletes the data object associated with a given key in the remote storage system
+
+Each CRUD method has both a structured data and binary data version. Additionally, each of the CRUD methods has an asynchronous version, which should always be used when calling from the main thread. With the exception of the `store` method, all CRUD methods take the data class and the object key as parameters. The `store` method takes the data object itself as a parameter.
+
+# Examples
+
+## Creating a Structured Data Object
+Let's say we want to create a record object to reflect player access to a specific "Island" in our game.
+```java
+@Data
+@Builder
+@DataCollection(name = "PlayerIslandAccess")
+public class PlayerIslandAccess implements StorableStructuredData {
+    // Player id should never be null
+    // This data is keyed by the player's id
+    @DataKey
+    @NonNull
+    String playerId;
+    // Island id should never be null
+    @NonNull
+    String islandId;
+}
+```
+
+## Creating a Binary Data Object
+Now, let's say we want to create a binary object that represents the chunk the "Island" is contained within, so that we can spawn it into our world.
+```java
+@Data
+@Builder
+@DataCollection(name = "IslandChunk")
+public class IslandChunk implements StorableBinaryData {
+    // Island id should never be null
+    // This data is keyed by the island's id
+    @DataKey
+    @NonNull
+    String islandId;
+    // The island chunk should never be null
+    @NonNull
+    Chunk chunk;
+    private byte[] serializeChunkToBytes(final Chunk chunk) {
+        // Implement chunk serialization here
+    }
+    private Chunk createChunkFromBytes(final byte[] bytes) {
+        // Implement chunk deserialization here
+    }
+    @Override
+    public ByteArrayInputStream open() {
+        return new ByteArrayInputStream(serializeChunkToBytes(chunk));
+    }
+    @Override
+    public void load(final ByteArrayInputStream binary) {
+        chunk = createChunkFromBytes(binary.readAllBytes());
+    }
+}
+```
+
+## Using our Structured and Binary Data Objects
+Now that we have our structured and binary data objects, we can implement per-chunk persistence in our game.
+```java
+public CompletableFuture<IslandChunk> loadIslandChunk(final Player player) {
+    final CompletableFuture<IslandChunk> islandChunkCompletableFuture = new CompletableFuture<>();
+    dataStorageModule.structuredDataExistsAsync(PlayerIslandAccess.class, player.getUniqueId().toString())
+            .thenAccept(exists -> {
+                if (exists) {
+                    // We know the object exists
+                    final PlayerIslandAccess islandAccess = dataStorageModule.loadStructuredData(
+                        PlayerIslandAccess.class, player.getUniqueId().toString())
+                            .orElseThrow();
+                    // If somehow the island is not there, remake it
+                    if (!dataStorageModule.binaryDataExists(
+                        IslandChunk.class, islandAccess.getIslandId())) {
+                        // Run chunk generation on the main thread
+                        Bukkit.getScheduler().runTask(myProjectPlugin, () -> {
+                            // Create a new island
+                            final IslandChunk islandChunk = generateNewIslandChunk();
+                            // Create access to the new island
+                            islandAccess.setIslandId(islandChunk.getIslandId());
+                            // Store the new island
+                            dataStorageModule.storeBinaryDataAsync(islandChunk).thenAccept(v -> {
+                                // Store the access to the created island
+                                dataStorageModule.storeStructuredData(islandAccess);
+                                // Return the new island
+                                islandChunkCompletableFuture.complete(islandChunk);
+                            });
+                        });
+                    } else {
+                        // We know the object exists
+                        final IslandChunk islandChunk = dataStorageModule.loadBinaryData(
+                            IslandChunk.class, islandAccess.getIslandId())
+                                .orElseThrow();
+                        islandChunkCompletableFuture.complete(islandChunk);
+                    }
+                } else {
+                    // Run chunk generation on the main thread
+                    Bukkit.getScheduler().runTask(myProjectPlugin, () -> {
+                        // Create a new island
+                        final IslandChunk islandChunk = generateNewIslandChunk();
+                        // Create access to the new island
+                        final PlayerIslandAccess islandAccess = PlayerIslandAccess.builder()
+                                .playerId(player.getUniqueId().toString())
+                                .islandId(islandChunk.getIslandId())
+                                .build();
+                        // Store the new island
+                        dataStorageModule.storeBinaryDataAsync(islandChunk).thenAccept(v -> {
+                            // Store the access to the created island
+                            dataStorageModule.storeStructuredData(islandAccess);
+                            // Return the new island
+                            islandChunkCompletableFuture.complete(islandChunk);
+                        });
+                    });
+                }
+            });
+    return islandChunkCompletableFuture;
+}
+public void deletePlayerIsland(final Player player) {
+    dataStorageModule.structuredDataExistsAsync(PlayerIslandAccess.class, player.getUniqueId().toString())
+            .thenAccept(exists -> {
+                if (exists) {
+                    // We know the object exists
+                    final PlayerIslandAccess islandAccess = dataStorageModule.loadStructuredData(
+                        PlayerIslandAccess.class, player.getUniqueId().toString())
+                            .orElseThrow();
+                    dataStorageModule.deleteBinaryData(IslandChunk.class, islandAccess.getIslandId());
+                    dataStorageModule.deleteStructuredData(PlayerIslandAccess.class,
+                        player.getUniqueId().toString());
+                }
+            });
+}
+```

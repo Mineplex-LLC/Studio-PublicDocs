@@ -1,0 +1,27 @@
+---
+title: Usage Guide
+description: How to get started with the Mineplex Studio.
+---
+
+# Ready to get started with the Mineplex Studio?
+This guide will walk you through the process of creating your first project, building it, and deploying it to Mineplex.
+
+## Prerequisites
+Before you can get started with the Mineplex Studio, you'll need to install the [Studio CLI](/docs/cli/installation) and [GitHub CLI](https://cli.github.com/). You'll also need a GitHub account.
+
+Next, head to the [Mineplex Studio](https://studio.mineplex.com) and create a Studio developer account. You can also create and manage organizations from this site to share access across organizations. As part of the account creation process, you'll need to verify your email address and subscribe to one of our plans (this helps cover the cost of running development containers and hosting the rest of your infrastructure for free!).
+
+## Creating a Project
+Once you've installed the Studio CLI and created a Studio Partner account, you're ready to create your first project. To do so, use the `studio login` and `studio create-project` commands. For details, see the [CLI documentation](/docs/cli/commands).
+
+## Editing Your Project
+When you open the project that the Studio CLI created, you'll see a few files and folders. The most important of these is the `src` folder, which contains the source code for your project. You can edit this code to customize your project. For example, you can add new abilities to your game, or change the behavior of existing abilities. While you have full access to the Spigot APIs from your project, we also provide a set of abstractions that make it easier to build games. For more information, see the [Game API documentation](/docs/sdk-game).
+
+The CLI also adds a few `.yaml` files automatically that hold your game configuration. You can define things player count constraints, matchmaking rules, product offerings for players, and more in these files. For more information, see the [configuration documentation](/docs/getting-started/game-config).
+
+## Testing Your Project
+Once you've made some changes to your project, you can test them in the Studio staging environment with the CLI hotswap command. This will build your project continuously based on file system changes and allow you to connect to a remote container IP and test your game. For more information, see the [CLI documentation](/docs/cli/commands).
+
+## Deploying Your Project
+Once you're happy with your changes, you can deploy them to Mineplex. By default, the Studio CLI creates a deployment action that runs via GitHub Actions
+in your repository whenever you push to the `main` branch. This action will build your project and deploy it to Mineplex. Additional features (such as publishing channels, change management, and more) are coming soon!
