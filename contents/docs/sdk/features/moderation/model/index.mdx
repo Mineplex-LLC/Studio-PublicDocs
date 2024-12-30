@@ -3,6 +3,8 @@ title: Punishment Object
 description: Punishment object and how to use it
 ---
 
+<JavadocLink artifactId="bom-public" groupId="com.mineplex.studio" classpath="com.mineplex.studio.dataplane.common.punishment.model.Punishment"/>
+
 The Punishment interface defines the structure and behavior of a punishment entity. It includes methods to access punishment details, check conditions, and compute properties such as its remaining duration or global applicability.
 
 ## Default Implementation: PunishmentImpl
@@ -12,7 +14,7 @@ The `PunishmentImpl` class provides a concrete implementation of the Punishment 
 ### Key Features
 
 - Builder Pattern: Uses Lombok's @Builder annotation for convenient instantiation.
-- Immutable Data: Defined with Lombok's @Value for immutability.
+- Immutable Data: Defined with Lombok's @Value for immutabilsity.
 - Default Values: Provides default values for fields like startTimestamp, removalInformation, and notes.
 
 ### Fields

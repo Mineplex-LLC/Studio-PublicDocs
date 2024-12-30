@@ -1,19 +1,54 @@
 import path from "path";
 import { createReadStream, promises as fs } from "fs";
-
 import { compileMDX } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
 import rehypePrism from "rehype-prism-plus";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeSlug from "rehype-slug";
 import rehypeCodeTitles from "rehype-code-titles";
-import rehypeKatex from 'rehype-katex'
+import rehypeKatex from 'rehype-katex';
 import { visit } from "unist-util-visit";
 
 import { PageRoutes } from "@/lib/pageroutes";
 import { components } from '@/lib/components'; 
 import { Settings } from "@/lib/meta";
 import { GitHubLink } from "@/settings/navigation";
+
+// New rehype plugin to inject a link icon in headings
+const rehypeAddLinkIcon = () => (tree: any) => {
+  visit(tree, "element", (node) => {
+    if (node.tagName === "h2" || node.tagName === "h3" || node.tagName === "h4") {
+      const groupWrapper = {
+        type: "element",
+        tagName: "div",
+        properties: {
+          className: ["group"],
+        },
+        children: node.children,
+      };
+
+      const linkIcon = {
+        type: "element",
+        tagName: "span",
+        properties: {
+          className: [
+            "icon", 
+            "icon-link", 
+            "cursor-pointer", 
+            "opacity-0", 
+            "hover:opacity-100", 
+            "transition-opacity", 
+          ],
+        },
+        children: [{ type: "text", value: " 🔗" }],
+      };
+
+      // Add the icon inside the heading
+      groupWrapper.children.push(linkIcon);
+      node.children = groupWrapper.children; 
+    }
+  });
+};
 
 async function parseMdx<Frontmatter>(rawMdx: string) {
   return await compileMDX<Frontmatter>({
@@ -22,7 +57,7 @@ async function parseMdx<Frontmatter>(rawMdx: string) {
       parseFrontmatter: true,
       mdxOptions: {
         rehypePlugins: [
-          preCopy,
+          rehypeAddLinkIcon, // Add link icon to headings
           rehypeCodeTitles,
           rehypeKatex,
           rehypePrism,

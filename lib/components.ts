@@ -14,11 +14,13 @@ const FileTree = dynamic(() => import('@/components/markup/filetree'), {
 });
 
 import { Folder, File } from '@/components/markup/filetree';
+import JavadocLink from "@/components/markup/javadoc";
 
 export const components = {
     a: RoutedLink as React.ComponentType<React.AnchorHTMLAttributes<HTMLAnchorElement>>,
     Card,
     CardGrid,
+    JavadocLink,
     FileTree,
     Folder,
     File,

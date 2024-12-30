@@ -9,6 +9,7 @@ import Toc from "@/components/navigation/toc";
 import Feedback from "@/components/navigation/feedback";
 import { BackToTop } from "@/components/navigation/backtotop";
 import { Typography } from "@/components/ui/typography";
+import ClipboardCopy from "@/components/navigation/clipboardcopy"; // Import the ClipboardCopy component
 
 type PageProps = {
   params: { slug: string[] };
@@ -42,6 +43,7 @@ export default async function Pages({ params: { slug = [] } }: PageProps) {
           {Settings.totop && <BackToTop className="mt-6 self-start text-sm text-neutral-800 dark:text-neutral-300/85" />}
         </div>
       )}
+      <ClipboardCopy /> {/* Add the ClipboardCopy component here */}
     </div>
   );
 }
@@ -49,7 +51,7 @@ export default async function Pages({ params: { slug = [] } }: PageProps) {
 export async function generateMetadata({ params: { slug = [] } }: PageProps) {
   const pathName = slug.join("/");
   const res = await getDocument(pathName);
-  
+
   if (!res) return null;
 
   const { frontmatter, lastUpdated } = res;
