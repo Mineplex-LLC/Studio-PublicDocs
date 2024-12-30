@@ -1,0 +1,185 @@
+---
+title: Messaging Module
+description: How to use the Mineplex Studio Messaging Module.
+---
+
+<JavadocLink classpath="com.mineplex.studio.sdk.modules.messaging.MessagingdModule"/>
+
+The Messaging Module enables communication between containers in the same namespace by sending and receiving messages. Messages can be targeted to specific containers based on various criteria.
+
+## Key Concepts
+- **Namespace-Specific Messaging**: Messages can only be sent to and received from containers within the same namespace.
+- **Event-Driven Architecture**: Messages trigger events, enabling responsive and asynchronous communication.
+- **Targeted Delivery:** Messages can be directed to specific containers, projects, or namespaces.
+
+## Use Cases
+- **Inter-Container Communication:** Facilitate communication between different containers within the same namespace for coordinated actions.
+- **Event Handling:** Use event-driven architecture to respond to specific messages with appropriate handlers.
+- **Targeted Messaging:** Send messages to specific containers based on predefined criteria for targeted communication.
+
+## Primary Functionalities
+### Registering a Listener
+You can register a listener to receive messages associated with a specific key. When a message with the registered key is received, an AsyncMineplexMessageReceivedEvent is triggered.
+
+```java
+void registerKey(@NonNull String key);
+```
+#### Parameters:
+- key: The key for the messages you want to listen for.
+
+### Sending a Message to a Single Target
+Send a message to a specific target with a designated key.
+
+```java
+@NonNull CompletableFuture<Void> sendMessage(
+    @NonNull String key, 
+    @NonNull Object message, 
+    @NonNull MineplexMessageTarget target
+);
+```
+#### Parameters:
+- key: Identifier for the message type.
+- message: The message content.
+- target: The target container details.
+
+#### Returns: 
+A `CompletableFuture<Void>` indicating the success or failure of the send operation.
+
+### Sending a Message to Multiple Targets
+Send a message to multiple specified targets with a designated key.
+
+```java
+@NonNull CompletableFuture<Void> sendMessage(
+    @NonNull String key, 
+    @NonNull Object message, 
+    @NonNull Collection<@NonNull MineplexMessageTarget> targets
+);
+```
+#### Parameters:
+- key: Identifier for the message type.
+- message: The message content.
+- targets: Collection of target container details.
+
+#### Returns: 
+A `CompletableFuture<Void>` indicating the success or failure of the send operation.
+
+### Sending Multiple Messages to a Single Target
+Send multiple messages to a single target with the same key.
+
+```java
+@NonNull CompletableFuture<Void> sendMessages(
+    @NonNull String key, 
+    @NonNull Collection<@NonNull Object> messages, 
+    @NonNull MineplexMessageTarget target
+);
+```
+#### Parameters:
+- key: Identifier for the message type.
+- messages: Collection of messages to be sent.
+- target: The target container details.
+
+#### Returns: 
+A `CompletableFuture<Void>` indicating the success or failure of the send operation.
+
+## MineplexMessageTarget
+
+### Matching Namespace
+Create a message target by targeting any container in a given namespace.
+```java
+public static MineplexMessageTarget matchingNamespace(@NonNull final String namespaceIdentifier);
+```
+### Matching Project
+Create a message target by targeting any container in a given project.
+```java
+public static MineplexMessageTarget matchingProject(@NonNull final String projectIdentifier);
+```
+### Matching Pod
+Create a message target by targeting a specific container.
+```java
+public static MineplexMessageTarget matchingPod(@NonNull final String podIdentifier);
+```
+
+## Example
+To assist in using this module, here is an example which sends and receives messages.
+
+```java
+package com.mineplex.studio.example;
+
+import com.mineplex.studio.sdk.modules.messaging.MessagingModule;
+import com.mineplex.studio.sdk.modules.MineplexModuleManager;
+import com.mineplex.studio.sdk.modules.messaging.target.MineplexMessageTarget;
+import org.bukkit.plugin.java.JavaPlugin;
+
+public class MyGame extends JavaPlugin {
+
+    private MessagingModule messagingModule;
+
+    @Override
+    public void onEnable() {
+        // Initialize the messaging module
+        this.messagingModule = MineplexModuleManager.getRegisteredModule(MessagingModule.class);
+
+        // setup the messaging module
+        this.messagingModule.setup();
+
+        // Register a listener for incoming messages
+        // This is only required if you'd like to also listen to the incoming message on this key
+        messagingModule.registerKey("exampleKey");
+
+        // Send a test message
+        sendMessage();
+    }
+
+    private void sendMessage() {
+        final String key = "exampleKey";
+        final String message = "Hello from MessagingPlugin!";
+
+        // namespace ID can be found in your configuration file
+        final MineplexMessageTarget target = MineplexMessageTarget.matchingNamespace("exampleNamespace");
+
+        messagingModule
+          .sendMessage(key, message, target)
+          .thenAccept(voidResult -> {
+                getLogger().info("Message sent successfully.");
+            }).exceptionally(ex -> {
+                getLogger().severe("Failed to send message: " + ex.getMessage());
+                return null;
+            }
+        );
+    }
+}
+```
+
+And then to listen to the messaging that will come in:
+
+```java
+package com.mineplex.studio.example;
+
+import com.mineplex.studio.sdk.modules.messaging.event.AsyncMineplexMessageReceivedEvent;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.plugin.java.JavaPlugin;
+
+public class MessageListener implements Listener {
+
+    private final JavaPlugin plugin;
+
+    public MessageListener(final JavaPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    @EventHandler
+    public void onMessageReceived(final AsyncMineplexMessageReceivedEvent event) {
+        if ("exampleKey".equals(event.getKey())) {
+            final String message = (String) event.getMessage();
+            plugin.getLogger().info("Received message: " + message);
+        }
+    }
+}
+```
+
+And don't forget to register the listener in your main class!
+
+```java
+getServer().getPluginManager().registerEvents(new MessageListener(this), this);
+```

@@ -42,8 +42,6 @@ const rehypeAddLinkIcon = () => (tree: any) => {
         },
         children: [{ type: "text", value: " 🔗" }],
       };
-
-      // Add the icon inside the heading
       groupWrapper.children.push(linkIcon);
       node.children = groupWrapper.children; 
     }

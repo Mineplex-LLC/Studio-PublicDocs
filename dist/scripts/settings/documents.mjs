@@ -173,7 +173,7 @@ export const Documents = [
             },
             {
                 title: "Built-In Game Mechanics",
-                href: "/modules/game/mechanics",
+                href: "/features/game/mechanics",
                 items: [
                     {
                         title: "Ability Mechanic",
