@@ -25,7 +25,7 @@ Through the Chat Module methods `isChatSilenced(ChatChannel)` and `setChatSilenc
 ## Chat Filter
 All Studio projects are required to run any user-provided text that will be displayed to other players through our chat filter. The Chat Module provides the method `isFiltered(String)`, which returns true if the String text is determined to be blocked by our chat filter. There is also a method `isFilteredAsync(String)` which can be used to query the chat filter asynchronously. When filtering text from the main thread, the asynchronous approach should always be used.
 
-# Examples
+## Examples
 
 ## Chat Filtering
 Let's imagine that players are allowed to freely build in our game. In Minecraft, players are able to write text on signs that they place in the world. If players can place down signs, we have to make sure to run the sign text through the chat filter. This can be done in an event `Listener`.
