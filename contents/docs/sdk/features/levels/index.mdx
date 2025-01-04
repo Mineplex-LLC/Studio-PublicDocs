@@ -46,23 +46,32 @@ We have an in-built `MineplexExperienceSessionImpl` which implements the `Minepl
     ```java
     final MineplexLevelModule levelModule = MineplexModuleManager.getRegisteredModule(MineplexLevelModule.class);
     // I'm using get here on the future, make sure you're handling the thread safety properly
-    final Map<UUID, ExperienceAwardResult> result = levelModule.rewardGame(experienceSession).get();
+    final CompletableFuture<Map<UUID, ExperienceAwardResult>> awardFuture = levelModule.rewardGame(experienceSession);
     ```
     </StepItem>
     <StepItem title="Inform the players">
     Once you've told our backend about your session, now we'll tell you how much each player earned!
     ```java
-    final ExperienceAwardResult awarded = result.get(player.getUniqueId()); 
-
-    if(awarded == null) return; // remember to null check (no experience awarded)
-
-    // make this fancy, with your own styling - remember to use 'Mineplex Network' to avoid any confusion/conflict with game systems
-    player.sendMessage(Component.text("You have earned " + awarded.getAwardedExperience() + " Mineplex Network exp!"));
-
-    // send level up message
-    if(awarded.hasLevelIncreased()) {
-        player.sendMessage(Component.text("You have increased in Mineplex Network Level!")); // add your styling, perhaps include the level!
-    }
+    // Handle the Future asynchronously to avoid blocking the main thread
+    awardFuture.thenAcceptAsync(result -> {
+        // Inform the players inside the callback
+        result.forEach((uuid, awarded) -> {
+            // Use Bukkit or your game player store API to get the player
+            final Player player = Bukkit.getPlayer(uuid);
+            // remember to null check awarded, this will happen if nothing is given.
+            if (player != null && awarded != null) {
+                player.sendMessage(Component.text("You have earned " + awarded.getAwardedExperience() + " Mineplex Network exp!"));
+                // Send level-up message
+                if (awarded.hasLevelIncreased()) {
+                    player.sendMessage(Component.text("You have increased in Mineplex Network Level!")); // Add your styling, perhaps include the level!
+                }
+            }
+        });
+    }).exceptionally(ex -> {
+        // Handle any errors during the reward process
+        ex.printStackTrace();
+        return null; // Return null to satisfy the exceptionally handler
+    });
     ```
     </StepItem>
 </Step>
