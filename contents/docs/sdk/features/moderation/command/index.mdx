@@ -3,8 +3,8 @@ title: Default Punishment Command
 description: How to use the default punishment command
 ---
 
-<Note title="This can be disabled" type="note" >
-If you'd like to make your own command, use the Moderation Module's `disableDefaultPunishmentCommand()` method.
+<Note title="This can be disabled" type="note">
+If you'd like to create your own command, use the Moderation Module's `disableDefaultPunishmentCommand()` method.
 </Note>
 
 ## Permissions
@@ -13,46 +13,46 @@ If you'd like to make your own command, use the Moderation Module's `disableDefa
 - **`mineplex.moderation.*`**  
   Grants access to all moderation features.
 
-### Command
+### Command Permissions
 - **`mineplex.moderation.command.punish`**  
   Grants access to the punishment command.
 
 #### View Punishments
 - **`mineplex.moderation.command.punish.view`**  
-  Grants permission to view all punishments.
+  Allows viewing all punishments.  
 - **`mineplex.moderation.command.punish.view.history`**  
-  Grants permission to view punishment histories.
+  Allows viewing punishment histories.  
 
 #### View Details
 - **`mineplex.moderation.command.punish.view.details.*`**  
-  Grants permission to view all punishment details.
+  Grants access to all punishment details.  
 - **`mineplex.moderation.command.punish.view.details.notes`**  
-  Allows viewing punishment notes.
+  Allows viewing punishment notes.  
 - **`mineplex.moderation.command.punish.view.details.issuer`**  
-  Allows viewing who added the punishment.
+  Allows viewing the issuer of punishments.  
   - **`mineplex.moderation.command.punish.view.details.issuer.self`**  
-    Allows viewing punishments added by themselves.
+    Allows viewing punishments issued by the user.  
   - **`mineplex.moderation.command.punish.view.details.issuer.other`**  
-    Allows viewing punishments added by others.
+    Allows viewing punishments issued by others.  
 - **`mineplex.moderation.command.punish.view.details.remover.*`**  
-  Grants permission to view who removed punishments.
+  Grants access to see who removed punishments.  
   - **`mineplex.moderation.command.punish.view.details.remover.self`**  
-    Allows viewing punishments removed by themselves.
+    Allows viewing punishments removed by the user.  
   - **`mineplex.moderation.command.punish.view.details.remover.other`**  
-    Allows viewing punishments removed by others.
+    Allows viewing punishments removed by others.  
 
 #### Remove Punishments
 - **`mineplex.moderation.command.punish.remove.*`**  
-  Grants permission to remove all punishments.
+  Grants permission to remove all punishments.  
 - **`mineplex.moderation.command.punish.remove.self`**  
-  Allows removal of punishments applied by themselves.
+  Allows removing punishments issued by the user.  
 - **`mineplex.moderation.command.punish.remove.other`**  
-  Allows removal of punishments applied by other moderators.
+  Allows removing punishments issued by others.  
 
 #### Create Punishments
 - **`mineplex.moderation.command.create`**  
-  Grants access to create punishments.
+  Grants access to create punishments.  
 - **`mineplex.moderation.command.create.reason.*`**  
-  Allows creating punishments for all reasons.
+  Allows creating punishments for all reasons.  
 - **`mineplex.moderation.command.create.reason.[reason_identifier]`**  
-  Allows creating punishments for specific reasons (`[reason_identifier]`).
+  Allows creating punishments for specific reasons (`[reason_identifier]`).  

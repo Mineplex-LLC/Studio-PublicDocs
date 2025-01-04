@@ -1,0 +1,100 @@
+---
+title: Level Module
+description: How to use the Mineplex Studio Level Module.
+---
+
+<JavadocLink classpath="com.mineplex.studio.sdk.modules.level.MineplexLevelModule"/>
+
+The `MineplexLevelModule` is a module for managing player leveling and experience in the Mineplex system. It provides methods for retrieving, updating, and managing player experience data. This module supports both online and offline players, allowing asynchronous access to player data and rewarding players with experience.
+
+## Key Features
+- Retrieve Player Experience: Fetch experience data for individual or multiple players.
+- Cache Support: Access experience data for online players directly from the cache.
+- Asynchronous Operations: All retrieval and update operations are non-blocking, using CompletableFuture for concurrency.
+- Experience Rewarding: Grant experience to players via predefined sessions.
+
+## Rewarding players
+We have designed our system to allow partners to add weights to each action. Rather than directly awarding xp, you report a game session and the players' total action values. This allows us to calculate how much xp to award them based on their own player profile, and network conditions.
+
+To award, we use the Module's rewardGame method:
+```java
+@NonNull CompletableFuture<@NonNull Map<@NonNull UUID, @NonNull ExperienceAwardResult>>
+rewardGame(@NonNull MineplexExperienceSession levelSession)
+```
+
+### In-built Example
+We have an in-built `MineplexExperienceSessionImpl` which implements the `MineplexExperienceSession` to provide session functionality. 
+
+<Step>
+    <StepItem title="Construct the session">
+    ```java
+    final MineplexExperienceSessionImpl experienceSession = MineplexExperienceSessionImpl.start();
+    ```
+    This example will use this class, but you are welcome to create your own implementing class. This is the session we'll be using to award player's with points, which will be converted into experience by our backend system.
+    </StepItem>
+
+    <StepItem title="Award your points">
+    So, the player did something cool, like getting a kill, or claiming a beacon, reward them!
+    ```java
+    final Player player = event.getPlayer();
+    final int points = 5;
+    experienceSession.addPoints(player, points);
+    ```
+    </StepItem>
+    <StepItem title="Apply the session">
+    Once your game comes to an end (and only when this happens!), apply the session's results to the players.
+    ```java
+    final MineplexLevelModule levelModule = MineplexModuleManager.getRegisteredModule(MineplexLevelModule.class);
+    // I'm using get here on the future, make sure you're handling the thread safety properly
+    final Map<UUID, ExperienceAwardResult> result = levelModule.rewardGame(experienceSession).get();
+    ```
+    </StepItem>
+    <StepItem title="Inform the players">
+    Once you've told our backend about your session, now we'll tell you how much each player earned!
+    ```java
+    final ExperienceAwardResult awarded = result.get(player.getUniqueId()); 
+
+    if(awarded == null) return; // remember to null check (no experience awarded)
+
+    // make this fancy, with your own styling - remember to use 'Mineplex Network' to avoid any confusion/conflict with game systems
+    player.sendMessage(Component.text("You have earned " + awarded.getAwardedExperience() + " Mineplex Network exp!"));
+
+    // send level up message
+    if(awarded.hasLevelIncreased()) {
+        player.sendMessage(Component.text("You have increased in Mineplex Network Level!")); // add your styling, perhaps include the level!
+    }
+    ```
+    </StepItem>
+</Step>
+
+## Other Methods
+
+### Retrieve Player Experience by `OfflinePlayer`
+
+```java
+@NonNull CompletableFuture<@NonNull MineplexPlayerExperience> getPlayerExperience(@NonNull OfflinePlayer player)
+```
+
+#### Example Usage:
+
+```java
+OfflinePlayer player = Bukkit.getOfflinePlayer("playerName");
+mineplexLevelModule.getPlayerExperience(player).thenAccept(experience -> {
+    System.out.println("Player Level: " + experience.getLevel());
+});
+```
+
+### Retrieve Player Experience by `UUID`
+
+```java
+@NonNull CompletableFuture<@NonNull MineplexPlayerExperience> getPlayerExperience(@NonNull UUID playerId)
+```
+
+#### Example Usage:
+
+```java
+UUID playerId = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+mineplexLevelModule.getPlayerExperience(playerId).thenAccept(experience -> {
+    System.out.println("Player XP: " + experience.getExperience());
+});
+```
