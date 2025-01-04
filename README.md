@@ -11,8 +11,8 @@ Feel free to contribute any extra information, or add any non-documented feature
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/Mineplex-LLC/Studio-Documentation
-    cd Studio-Documentation
+    git clone https://github.com/Mineplex-LLC/Studio-Docs
+    cd Studio-Docs
     ```
 
 2. Install dependencies:
