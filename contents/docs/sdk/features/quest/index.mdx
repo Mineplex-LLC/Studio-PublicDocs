@@ -1,0 +1,99 @@
+---
+title: Quest Module
+description: How to setup and add progress to quests
+---
+
+<JavadocLink classpath="com.mineplex.studio.sdk.modules.quest.QuestModule"/>
+
+## Configuring Quests
+<Note title="Required Implementation">
+We expect you to setup quests on your game(s) within 90 days of publishing.
+</Note>
+
+The first step to setting up quests is to define them within your project.
+
+Add your quest definitions into your configuration folder, under the quests subfolder, as shown:
+<FileTree>
+  <Folder name="config" label="config">
+    <Folder name="quests" label="quests">
+        <File name="first-adventure.yaml" label="first-adventure.yaml" />
+    </Folder>
+  </Folder>
+</FileTree>
+
+Quest definitions should be formatted as follows:
+
+```yaml
+# A name displayed to players when picking up the quest
+displayName: "First Adventure"
+
+# The objective required to be completed, with a sufficient description
+objectiveDescription:
+- "Head into the Great Mines and"
+- "Defeat 10 Blaze Monsters"
+
+# Any (optional) rewards you'd like to give as extra incentives
+studioRewards:
+- "100 Bonus Coins"
+
+# How difficult your quest is (EASY/MEDIUM/HARD)
+difficulty: "EASY"
+
+# How much time people have to complete your quest (DAILY/WEEKLY)
+frequency: "DAILY"
+```
+
+## Awarding progress
+Once players pick up a quest, they'll want to pop in your game to complete it. This part shows how you can progress a player's quest.
+We call an instance of a picked-up quest a "Quest Ticket", as they're trying to complete a picked up ticket (like a bingo ticket).
+
+<Step>
+    <StepItem title="Player completes an action">
+    Let's say your quest is to kill blazes (like our example configured quest "First Adventure")
+
+    Well, we'll need to listen for the EntityDeathEvent to be informed when this happens!
+
+    ```java
+    @EventHandler
+    public void playerKillBlaze(final EntityDeathEvent event) {
+        // if killed naturally - ignore
+        if(event.getDamageSource().getCausingEntity() == null) return; 
+        // if the killed entity is not a blaze - ignore
+        if(!(event.getEntity() instanceof Blaze)) return;
+        // check kill is a player & store the player as a variable
+        if(!(event.getDamageSource().getCausingEntity() instanceof Player player)) return;
+
+        // todo - next step!
+    }
+    ```
+    </StepItem>
+    <StepItem title="Add progress to the quest">
+    Next, we'll always award progress to the player when completing an action in any given quest - as the `addProgressIfAssigned` method checks they're assigned before trying to award. This saves us checking the player is assigned before hitting the method.
+    ```java
+    // get the quest module from the module manager
+    final QuestModule questModule = MineplexModuleManager.getRegisteredModule(QuestModule.class);
+
+    // award the quest using the quest's file name (removing the file type suffix) as a quest key.
+    // you can use addProgressIfAssigned(player, "first-adventure", 2) to award more than 1.
+    questModule.addProgressIfAssigned(player, "first-adventure");
+    ```
+    </StepItem>
+    <StepItem title="Dish out your defined rewards">
+    Well, would you look at that, the player has killed our 10 blazes! Once a player completes a quest, `MineplexQuestCompleteEvent` is thrown using the Paper event channel! We should handle this event by giving rewards to the player.
+    
+    This is only needed if you've added `studioRewards` to your quest's configuration!
+    ```java
+    @EventHandler
+    public void blazeQuestCompleted(final MineplexQuestCompleteEvent event) {
+        // check the event has the key we're expecting
+        if(!event.getQuestKey().equals("first-adventure")) return;
+
+        // get the player completing the quest
+        final Player player = event.getPlayer();
+
+        // give them rewards using your systems
+        addCoins(player, 100);
+    }
+    ```
+    </StepItem>
+</Step>

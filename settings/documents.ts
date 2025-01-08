@@ -157,6 +157,10 @@ export const Documents: Paths[] = [
             href: "/purchase",
           },
           {
+            title: "Quest Module",
+            href: "/quest"
+          },
+          {
             title: "Queue Module",
             href: "/queueing",
           },
