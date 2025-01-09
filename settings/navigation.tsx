@@ -18,5 +18,5 @@ export const Navigations = [
 ];
 
 export const GitHubLink = {
-  href: "https://github.com/Mineplex-LLC/Studio-Docs",
+  href: "https://github.com/Mineplex-LLC/Studio-PublicDocs",
 };

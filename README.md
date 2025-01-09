@@ -11,8 +11,8 @@ Feel free to contribute any extra information, or add any non-documented feature
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/Mineplex-LLC/Studio-Docs
-    cd Studio-Docs
+    git clone https://github.com/Mineplex-LLC/Studio-PublicDocs
+    cd Studio-PublicDocs
     ```
 
 2. Install dependencies:
