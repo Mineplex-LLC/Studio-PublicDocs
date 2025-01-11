@@ -100,7 +100,22 @@ public static MineplexMessageTarget matchingPod(@NonNull final String podIdentif
 ```
 
 ## Example
-To assist in using this module, here is an example which sends and receives messages.
+To assist in using this module, here is an example which sends and receives message objects.
+
+```java
+package com.mineplex.studio.example;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.extern.jackson.Jacksonized;
+
+@Jacksonized
+@Data
+@Builder
+public class GameMessage {
+    String message;
+}
+```
 
 ```java
 package com.mineplex.studio.example;
@@ -119,9 +134,6 @@ public class MyGame extends JavaPlugin {
         // Initialize the messaging module
         this.messagingModule = MineplexModuleManager.getRegisteredModule(MessagingModule.class);
 
-        // setup the messaging module
-        this.messagingModule.setup();
-
         // Register a listener for incoming messages
         // This is only required if you'd like to also listen to the incoming message on this key
         messagingModule.registerKey("exampleKey");
@@ -132,7 +144,7 @@ public class MyGame extends JavaPlugin {
 
     private void sendMessage() {
         final String key = "exampleKey";
-        final String message = "Hello from MessagingPlugin!";
+        final GameMessage message = GameMessage.builder().message("Hello from MessagingPlugin!").build();
 
         // namespace ID can be found in your configuration file
         final MineplexMessageTarget target = MineplexMessageTarget.matchingNamespace("exampleNamespace");
@@ -160,6 +172,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Optional;
+
 public class MessageListener implements Listener {
 
     private final JavaPlugin plugin;
@@ -170,8 +184,9 @@ public class MessageListener implements Listener {
 
     @EventHandler
     public void onMessageReceived(final AsyncMineplexMessageReceivedEvent event) {
-        if ("exampleKey".equals(event.getKey())) {
-            final String message = (String) event.getMessage();
+        final Optional<GameMessage> data = event.getMessageIf("exampleKey");
+        if (data.isPresent()) {
+            final String message = data.getMessage();
             plugin.getLogger().info("Received message: " + message);
         }
     }
