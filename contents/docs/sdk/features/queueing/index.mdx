@@ -100,7 +100,9 @@ public void returnToLobby(Player player) {
 
 Keeps a player in their current queue, avoiding entry into specific game tags. This is useful when a player wants to continue playing your mode rather than playing the tag rotation.
 
-**Note**: This will clear the player's joined tag (if any exists) and cause `joinedThroughTag` to return `false`.
+<Note type="warning">
+This will clear the player's joined tag (if any exists) and cause `joinedThroughTag` to return `false`.
+</Note>
 
 - **Parameters**:
     - `player`: The player to retain.
