@@ -55,12 +55,12 @@ async function parseMdx<Frontmatter>(rawMdx: string) {
       parseFrontmatter: true,
       mdxOptions: {
         rehypePlugins: [
-          rehypeAddLinkIcon, // Add link icon to headings
           rehypeCodeTitles,
           rehypeKatex,
           rehypePrism,
           rehypeSlug,
           rehypeAutolinkHeadings,
+          rehypeAddLinkIcon, // Add link icon to headings
           postCopy,
         ],
         remarkPlugins: [remarkGfm],
