@@ -13,14 +13,14 @@ const ClipboardCopy = () => {
         if (target && target.closest) {
           const headingElement = target.closest('h2, h3, h4') as HTMLElement; // Type assertion for closest element
           if (headingElement) {
-            const headingText = headingElement.innerText; // innerText is valid on HTMLElement
-            const slug = headingText.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
-            const url = `${window.location.href}#${slug}`;
-            navigator.clipboard.writeText(url);
+            const headingLink = headingElement.querySelector('a');
+            if (headingLink) {
+              navigator.clipboard.writeText(headingLink.href);
 
-            // Show copied message and hide after 2 seconds
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+              // Show copied message and hide after 2 seconds
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }
           }
         }
       });
