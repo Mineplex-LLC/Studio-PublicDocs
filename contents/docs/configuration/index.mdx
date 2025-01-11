@@ -103,6 +103,12 @@ Players can find your game from the Mineplex Lobby using the compass icon and na
 - `game.tags`: (string[]) a list of tags that describe your game. These can describe categories, but can also describe attributes of the game such as `Team`, `Sandbox`, and so on.
 - `game.playtestPlayerIds`: (string[]) a list of player UUIDs that are allowed to playtest your game on the staging network. This is useful for sharing your game with a select group of players before it is published to the Mineplex network.
 
+## Specialized Tags
+
+Below is a list of specialized tags that you can apply in your `game-properties.yaml` that can affect your game when published.
+- `Arcade` - Your game will be shown and playable via the Mixed Arcade system. Note that there are additional requirements you must meet to use this tag that can be found [here](/docs/sdk/features/queueing#tag-queue)
+- `Levels` - Will apply a header to your game description in the Game Browser to display that your game supports gaining Mineplex Network Experience.
+
 ## Advanced Configuration and Overrides
 
 There are a set of internal overrides that can be applied to your project by the Mineplex team. These unlock advanced or non-standard functionality, which is generally available, but not exposed in the `game-properties.yaml` file. We currently support:
