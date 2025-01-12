@@ -38,7 +38,7 @@ final String partyId = party.getId();
 ### Party Members
 
 <Note type="warning">
-    There is no guarantee that players in the party will be online.
+    There is no guarantee that players in the party will be online in the running instance.
 </Note>
 
 #### Retrieving Party Leader 
@@ -65,7 +65,7 @@ final OfflinePlayer partyOwner = party.getOwner();
 for (final OfflinePlayer offlinePlayer : party.listMembers(false)) {
     if (offlinePlayer.isOnline()) {
         final Player player = (Player) offlinePlayer;
-        player.sendMessage("You are a party member of " + partyOwner.getName() + "!");
+        player.sendMessage(Component.text("You are a party member of " + partyOwner.getName() + "!"));
     }
 }
 ```
@@ -77,7 +77,7 @@ You can also verify that a player is a member of a party via `hasMember(OfflineP
 ```java
 final boolean isPartyMember = party.hasMember(player);
 if (isPartyMember) {
-    player.sendMessage("You are a member of this party!");
+    player.sendMessage(Component.text("You are a member of this party!"));
 }
 ```
 
