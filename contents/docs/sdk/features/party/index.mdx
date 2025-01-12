@@ -7,24 +7,94 @@ description: How to use the Mineplex Studio Party Module.
 
 # Party Module
 
- The Party Module is one of the built-in Studio Modules that allows you to query whether players in your game are in a party, and determine who is in the party with them. These methods are solely for you to integrate our parties into your games. All party functionality is handled internally by the SDK and requires no further implementation on your end. To fetch a party using its ID, use the Party Module method `getPartyById(String)`. To fetch the party of a given player if one exists, use the Party Module method `getPartyOfPlayer(String)`.
+The Party Module is one of the built-in Studio Modules that allows you to query whether players in your game are in a party, and determine who is in the party with them. These methods are solely for you to integrate our parties into your games. All party functionality is handled internally by the SDK and requires no further implementation on your end.
 
-## Party Data
- Once you've retrieved a party, you can access its ID, its leader, and all online players in the party.
+## Retrieving a Party
 
-# Example
- Let's say we are making an open-world game where players can use the Party system to team up. We don't want to allow players in the same Party to hurt one another, so we integrate with the Party module.
- ```java
- public boolean canDamage(final Player damager, final Player victim) {
-     final Optional<Party> damagerParty = partyModule.getPartyOfPlayer(damager);
-     final Optional<Party> victimParty = partyModule.getPartyOfPlayer(victim);
+Depending on the circumstances, a player's party data may have not been loaded yet. You can use either `isLoaded(OfflinePlayer)` or `isLoaded(UUID)` to check if their party data has been loaded.
 
-     // If neither player is in a party, they can't be in the same party
-     if (damagerParty.isEmpty() || victimParty.isEmpty()) {
-         return true;
-     }
+Fetching a party can be done using its ID via `getPartyById(String)` or by a given player using `getPartyOfPlayer(Player)`. 
 
-     // If the players are in one party, they can't hurt one another
-     return !damagerParty.get().getPlayers().contains(victim);
- }
- ```
+```java
+final PartyModule partyModule = MineplexModuleManager.getRegisteredModule(PartyModule.class);
+if (partyModule.isLoaded(player)) {
+    // Safe to check if they have a party.
+    final Optional<Party> party = partyModule.getPartyOfPlayer(player);
+}
+```
+
+## Retrieving Party Details
+
+Once you've retrieved a party, you can access its ID, its leader, and all players in the party.
+
+### Party ID
+
+All parties have a unique ID assigned that can be retrieved via `getId()`.
+
+```java
+final String partyId = party.getId();
+```
+
+### Party Members
+
+<Note type="warning">
+    There is no guarantee that players in the party will be online. Parties persist until disbanded.
+</Note>
+
+#### Retrieving Party Leader 
+
+Given a party, you can call `getOwner()` to return a `OfflinePlayer` of the owner of the party.
+
+```java
+final OfflinePlayer partyLeader = party.getOwner();
+if (partyLeader.isOnline()) {
+    Bukkit.broadcast(Component.text("Party leader is in-game!"));
+} else {
+    Bukkit.broadcast(Component.text("Party leader is not in this game!"));
+}
+```
+
+#### Retrieving Party Members
+
+Party members can be retrieved from a party by calling `listMembers(boolean)` with the argument being whether to include the party owner in the returned collection of `OfflinePlayer` objects.
+
+```java
+final OfflinePlayer partyOwner = party.getOwner();
+
+// We specified false, meaning that this will NOT include the party leader.
+for (final OfflinePlayer offlinePlayer : party.listMembers(false)) {
+    if (offlinePlayer.isOnline()) {
+        final Player player = (Player) offlinePlayer;
+        player.sendMessage("You are a party member of " + partyOwner.getName() + "!");
+    }
+}
+```
+
+#### Checking Party Members
+
+You can also verify that a player is a member of a party via `hasMember(OfflinePlayer)` or `hasMember(UUID)`, where the UUID is the UUID of the player you are checking.
+
+```java
+final boolean isPartyMember = party.hasMember(player);
+if (isPartyMember) {
+    player.sendMessage("You are a member of this party!");
+}
+```
+
+
+## Example
+Let's say we are making an open-world game where players can use the party system to team up. We don't want to allow players in the same party to hurt one another, so we integrate with the party module.
+```java
+public boolean canDamage(final Player damager, final Player victim) {
+    final Optional<Party> damagerParty = partyModule.getPartyOfPlayer(damager);
+    final Optional<Party> victimParty = partyModule.getPartyOfPlayer(victim);
+
+    // If neither player is in a party, they can't be in the same party
+    if (damagerParty.isEmpty() || victimParty.isEmpty()) {
+        return true;
+    }
+
+    // If the players are in one party, they can't hurt one another
+    return !damagerParty.get().hasMember(victim);
+}
+```
