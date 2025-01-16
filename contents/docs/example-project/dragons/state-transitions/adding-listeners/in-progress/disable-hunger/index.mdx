@@ -1,0 +1,82 @@
+---
+title: Disable Hunger Listener
+description: Prevents hunger from affecting players during the `STARTED` game state.
+---
+
+In this tutorial, we will walk through the implementation of the `DisableHungerListener`, which prevents hunger from affecting players during the `STARTED` game state. This ensures that players won’t experience hunger depletion while playing.
+
+<Step>
+
+    <StepItem title="Create the DisableHungerListener class">
+    The first step is to create the `DisableHungerListener` class that will listen for the `STARTED` game state. This listener will handle preventing hunger depletion during the game.
+
+    Here’s the basic structure of the class:
+
+    ```java
+    public class DisableHungerListener extends AbstractStateBasedListener {
+        public DisableHungerListener(final DragonsGame game, final DragonsPlugin plugin) {
+            super(plugin, game, BuiltInGameState.STARTED);
+        }
+
+        @EventHandler
+        public static void handleHunger(final FoodLevelChangeEvent foodLevelChangeEvent) {
+            foodLevelChangeEvent.setFoodLevel(20); // Full food level
+            foodLevelChangeEvent.setCancelled(true); // Cancel the event to prevent hunger decrease
+        }
+    }
+    ```
+
+    🔗 [DisableHungerListener class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/game/listeners/inprogress/DisableHungerListener.java)
+
+    - This class extends `AbstractStateBasedListener` to ensure the listener is triggered when the game enters the `STARTED` state.
+    - The `handleHunger` method listens for the `FoodLevelChangeEvent`, which is fired whenever a player's hunger level changes.
+
+    </StepItem>
+
+    <StepItem title="Handling the hunger event">
+    Inside the `handleHunger` method, we prevent hunger by setting the food level to 20 (the maximum level) and cancelling the event.
+
+    Here’s the implementation again for clarity:
+
+    ```java
+    @EventHandler
+    public static void handleHunger(final FoodLevelChangeEvent foodLevelChangeEvent) {
+        foodLevelChangeEvent.setFoodLevel(20); // Full food level
+        foodLevelChangeEvent.setCancelled(true); // Cancel the event
+    }
+    ```
+
+    - `foodLevelChangeEvent.setFoodLevel(20)`: This sets the player's food level to full (20).
+    - `foodLevelChangeEvent.setCancelled(true)`: This cancels the event, preventing the player's hunger from decreasing.
+
+    This ensures that hunger is effectively disabled during the game.
+
+    </StepItem>
+
+    <StepItem title="Register the listener in the DragonsGame class">
+    In order for the `DisableHungerListener` to be registered and run during the `STARTED` state, we need to add it to the list of listeners in the `DragonsGame` class.
+
+    Update the `setup` method of the `DragonsGame` class to register the listener:
+
+    ```java
+    this.listeners.add(new DisableHungerListener(this, this.dragonsPlugin));
+    ```
+
+    - `this.listeners.add(...)`: This adds the `DisableHungerListener` to the list of listeners, ensuring that it will be executed when the game enters the `STARTED` state.
+
+    </StepItem>
+
+    <StepItem title="Test the Hunger Listener">
+    Once the listener is implemented and registered, you can test it by:
+
+    1. Starting the game to trigger the `STARTED` state.
+    2. Observing that players' food levels remain at 20 regardless of any actions that would normally deplete hunger (e.g., running, jumping, etc.).
+    3. Verifying that hunger does not decrease during the game.
+
+    **Troubleshooting Tips:**
+    - Ensure the listener is correctly registered in the `DragonsGame` class setup method.
+    - Double-check that the `FoodLevelChangeEvent` is being correctly intercepted and cancelled.
+
+    </StepItem>
+
+</Step>

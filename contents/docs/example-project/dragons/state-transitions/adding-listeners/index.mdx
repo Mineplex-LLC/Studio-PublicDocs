@@ -1,0 +1,93 @@
+---
+title: State Listeners
+description: How we handle different states and trigger different things
+---
+
+State listeners allow you to dynamically handle game events based on the current game state. In dragons, we use them to create, implement, and use state-based listeners.
+
+<Step>
+
+    <StepItem title="Create an Abstract Implementation of StateBasedListener">
+    We added the `StateBasedListener` interface within our [lifecycle tutorial page](./)
+
+    To reduce repetitive code, create an abstract class that implements `StateBasedListener`. This class handles common functionality, such as registering and unregistering the listener.
+
+    🔗 [AbstractStateBasedListener class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/game/listeners/AbstractStateBasedListener.java)
+
+    ```java
+    import lombok.RequiredArgsConstructor;
+    import org.bukkit.event.HandlerList;
+    import org.bukkit.event.Listener;
+
+    /**
+    * Abstract implementation of the StateBasedListener interface.
+    */
+    @RequiredArgsConstructor
+    public abstract class AbstractStateBasedListener implements StateBasedListener {
+
+        protected final DragonsGame game;
+        protected final DragonsPlugin plugin;
+        protected final GameState activeState;
+
+        @Override
+        public void register() {
+            this.plugin.getServer().getPluginManager().registerEvents(this, this.plugin);
+        }
+
+        @Override
+        public void unregister() {
+            HandlerList.unregisterAll(this);
+        }
+
+        @Override
+        public GameState getActiveState() {
+            return this.activeState;
+        }
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Implement a State-Based Listener">
+    Once you have the abstract class, you can create specific listeners for different game states. Below is an example of a listener that handles player joins during the `PRE_START` state.
+    
+    **We'll expand on this further when we come to adding listeners!**
+
+    ```java
+    public class PlayerJoinPregameListener extends AbstractStateBasedListener {
+        public PlayerJoinPregameListener(final DragonsPlugin plugin, final DragonsGame game) {
+            super(game, plugin, BuiltInGameState.PRE_START);
+        }
+
+        @EventHandler
+        public static void handleJoin(final PlayerJoinEvent playerJoinEvent) {
+            playerJoinEvent.joinMessage(Component.text("A player joined!"));
+        }
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Register that we're using our new listener">
+    Within our `DragonsGame` class, we'll need to tell the plugin we've added this new listener.
+
+    We need to do this every time we add one of these, so don't forget, as this will trip you up!
+    ```java
+    @Override
+    public void setup() {
+
+        // rest of our code...
+
+        // here!
+        this.listeners.add(new PlayerJoinPregameListener(this, this.dragonsPlugin));
+
+        // the rest of our code (added before!)
+        this.dragonsPlugin.getServer().getPluginManager().registerEvents(this, this.dragonsPlugin);
+        this.setGameState(BuiltInGameState.PRE_START);
+    }
+    ```
+    </StepItem>
+
+</Step>
+
+
+
+

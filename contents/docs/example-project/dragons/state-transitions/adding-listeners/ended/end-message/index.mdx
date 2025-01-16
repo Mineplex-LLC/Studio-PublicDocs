@@ -1,0 +1,116 @@
+---
+title: EndedMessageListener
+description: Listens for the end of the game and broadcasts the top 3 player placements, playing fireworks for the winner.
+---
+
+In this tutorial, we will walk through the implementation of the `EndedMessageListener` class. This listener handles the end of the game, broadcasting the top 3 placements and playing fireworks for the winner.
+
+This listener is triggered only when the game reaches the `ENDED` state. It listens for game completions and processes the results.
+
+### Tutorial
+
+<Step>
+
+    <StepItem title="Create the EndedMessageListener class">
+    Begin by creating the `EndedMessageListener` class. This listener will trigger when the game reaches the `ENDED` state and process the final placements.
+
+    🔗 [EndedMessageListener class source code](https://github.com/BillyDotWS/StudioExample-Dragons/blob/master/src/main/java/com/mineplex/studio/dragons/game/listeners/ended/EndedMessageListener.java)
+
+    Here’s the structure of the class:
+
+    ```java
+    public class EndedMessageListener extends AbstractStateBasedListener {
+        public EndedMessageListener(final DragonsGame game, final DragonsPlugin plugin) {
+            super(plugin, game, BuiltInGameState.ENDED);
+        }
+    }
+    ```
+    
+    - The `EndedMessageListener` class extends `AbstractStateBasedListener` and listens to the `ENDED` game state.
+    </StepItem>
+
+    <StepItem title="Reverse the placements list">
+    In the `register` method, reverse the placements list so that the first 3 players are the last ones to be eliminated.
+
+    ```java
+    final List<OfflinePlayer> placements = this.game.getPlacements().reversed();
+    ```
+
+    - This reversal allows us to correctly display the 1st, 2nd, and 3rd place players in the final message.
+    </StepItem>
+
+    <StepItem title="Retrieve the top 3 players">
+    Use `Optional` to safely retrieve the top 3 players from the reversed placements list.
+
+    ```java
+    final Optional<OfflinePlayer> first = Optional.ofNullable(!placements.isEmpty() ? placements.getFirst() : null);
+    final Optional<OfflinePlayer> second = Optional.ofNullable(placements.size() > 1 ? placements.get(1) : null);
+    final Optional<OfflinePlayer> third = Optional.ofNullable(placements.size() > 2 ? placements.get(2) : null);
+    ```
+
+    - This ensures that we don’t encounter errors if there are fewer than 3 players in the list.
+    </StepItem>
+
+    <StepItem title="Build the end message components">
+    Construct the message components to display the top 3 players. Add different colors for 1st, 2nd, and 3rd places.
+
+    <Note type="success">
+    We're skipping over adding translations this step, we've done this a few times already, so this should be simple!
+
+    🔗 [Complete translations file](https://github.com/BillyDotWS/StudioExample-Dragons/blob/master/src/main/resources/i18n/Dragons_en.properties)
+    </Note>
+
+    ```java
+    endComponents.add(GameMessages.GAME_HEADER_FOOTER);
+    endComponents.add(GAME_NAME_MESSAGE);
+    endComponents.add(Component.empty());
+    first.ifPresent(offlinePlayer -> endComponents.add(Component.translatable(
+                    "mineplex.dragons.module.game.complete_position.1",
+                    Component.text(Objects.requireNonNull(offlinePlayer.getName()))
+                            .decoration(TextDecoration.BOLD, false)
+                            .color(NamedTextColor.WHITE))
+            .color(NamedTextColor.RED)
+            .decorate(TextDecoration.BOLD)));
+    second.ifPresent(offlinePlayer -> endComponents.add(Component.translatable(
+                    "mineplex.dragons.module.game.complete_position.2",
+                    Component.text(Objects.requireNonNull(offlinePlayer.getName()))
+                            .decoration(TextDecoration.BOLD, false)
+                            .color(NamedTextColor.WHITE))
+            .color(NamedTextColor.GOLD)
+            .decorate(TextDecoration.BOLD)));
+    third.ifPresent(offlinePlayer -> endComponents.add(Component.translatable(
+                    "mineplex.dragons.module.game.complete_position.3",
+                    Component.text(Objects.requireNonNull(offlinePlayer.getName()))
+                            .decoration(TextDecoration.BOLD, false)
+                            .color(NamedTextColor.WHITE))
+            .color(NamedTextColor.YELLOW)
+            .decorate(TextDecoration.BOLD)));
+    ```
+
+    - This code formats the text to display each player's position and name with corresponding colors (Red for 1st, Gold for 2nd, and Yellow for 3rd).
+    </StepItem>
+
+    <StepItem title="Broadcast the end message">
+    After building the components, broadcast the message to the server, using newlines to separate each component.
+
+    ```java
+    Bukkit.broadcast(Component.join(JoinConfiguration.newlines(), endComponents));
+    ```
+
+    - This ensures the message is displayed with proper spacing between the components.
+    </StepItem>
+
+    <StepItem title="Register the listener">
+    Finally, we need to register the `EndedMessageListener` in the `DragonsGame` class.
+
+    Add the listener registration to the setup method in the `DragonsGame` class:
+
+    ```java
+    this.listeners.add(new EndedMessageListener(this, this.dragonsPlugin));
+    ```
+
+    - This adds the `EndedMessageListener` to the list of listeners in the game, ensuring it is triggered during the `ENDED` game state.
+
+    </StepItem>
+
+</Step>

@@ -1,0 +1,153 @@
+---
+title: QueueAgainListener
+description: Listens for the game to end and re-queues players to a new game or shuts down the server if no games are left.
+---
+
+In this tutorial, we will go through the implementation of the `QueueAgainListener` class. This listener handles the re-queuing of players into a new game after the current game ends.
+
+This listener is triggered when the game reaches the `ENDED` state. It manages the re-queuing of players to continue playing or shuts down the server if no more games are available.
+
+### Tutorial
+
+<Step>
+
+    <StepItem title="Create the QueueAgainListener class">
+    Begin by creating the `QueueAgainListener` class. This listener will be triggered when the game ends and will re-queue players into a new game or shut down the server.
+
+    🔗 [QueueAgainListener class source code](https://github.com/BillyDotWS/StudioExample-Dragons/blob/master/src/main/java/com/mineplex/studio/dragons/game/listeners/ended/QueueAgainListener.java)
+
+    Here’s the structure of the class:
+
+    ```java
+    @Slf4j
+    public class QueueAgainListener extends AbstractStateBasedListener {
+        public QueueAgainListener(final DragonsGame game, final DragonsPlugin plugin) {
+            super(plugin, game, BuiltInGameState.ENDED);
+        }
+    }
+    ```
+    
+    - The `QueueAgainListener` class extends `AbstractStateBasedListener` and listens to the `ENDED` game state.
+    </StepItem>
+
+    <StepItem title="Initialize the Queuing module">
+    Initialize the `QueuingModule` in our fields to manage the re-queuing of players:
+
+    ```java
+    private final QueuingModule queueModule = MineplexModuleManager.getRegisteredModule(QueuingModule.class);
+    ```
+
+    - This module handles the process of adding players to the game queue for a new round.
+    </StepItem>
+
+    <Note type="success">
+    We're skipping over adding translations further steps, we've done this a few times already, so this should be simple!
+
+    🔗 [Complete translations file](https://github.com/BillyDotWS/StudioExample-Dragons/blob/master/src/main/resources/i18n/Dragons_en.properties)
+    </Note>
+
+    <StepItem title="Define the BukkitTask for player notifications">
+    Create a `BukkitRunnable` task that runs 5 seconds after the game ends. It will send a message to all online players, notifying them about their re-queue status.
+
+    ```java
+    new BukkitRunnable() {
+        @Override
+        public void run() {
+            Bukkit.getOnlinePlayers().forEach(p -> {
+                final boolean isArcadePlayer = QueueAgainListener.this.queueModule.joinedThroughTag(p, "arcade");
+                final Component newLocation = Component.text(isArcadePlayer ? "Mixed Arcade" : "Dragons")
+                        .color(NamedTextColor.YELLOW);
+                p.sendMessage(Component.join(
+                        JoinConfiguration.spaces(),
+                        PrefixUtil.getPrefix("Portal"),
+                        Component.translatable("mineplex.dragons.module.portal.queued_again_message", newLocation)
+                                .color(NamedTextColor.GRAY)));
+                QueueAgainListener.this
+                        .queueModule
+                        .requeuePlayer(p)
+                        .thenAcceptAsync(ignored -> log.info("Re-queued {} into a new game", p.getName()));
+            });
+        }
+    }.runTaskLater(this.plugin, 20 * 5);
+    ```
+
+    - This task sends a message to the player and then re-queues them into a new game.
+    </StepItem>
+
+    <StepItem title="Define the BukkitTask for action bar notifications">
+    Create another `BukkitRunnable` task that runs repeatedly, sending action bar notifications to all online players while they are waiting for a new game.
+
+    ```java
+    this.bukkitTask = new BukkitRunnable() {
+        @Override
+        public void run() {
+            if (!Bukkit.getOnlinePlayers().isEmpty()) {
+                for (final Player player : Bukkit.getOnlinePlayers()) {
+                    player.sendActionBar(
+                            Component.translatable("mineplex.dragons.module.portal.finding_server_actionbar")
+                                    .color(NamedTextColor.GREEN));
+                }
+            } else {
+                if (!QueueAgainListener.this
+                        .plugin
+                        .getGameModule()
+                        .getGameCycle()
+                        .get()
+                        .hasNextGame()) {
+                    Bukkit.shutdown();
+                    return;
+                }
+                QueueAgainListener.this.plugin.getGameModule().startNextGame();
+                this.cancel();
+            }
+        }
+    }.runTaskTimer(this.plugin, 20 * 5, 5);
+    ```
+
+    - This task sends an action bar message to players every 5 seconds, informing them that the system is finding a server for the next game.
+    </StepItem>
+
+    <StepItem title="Shutdown or start next game">
+    If there are no players online, check if the game cycle has more games to play. If there are no more games, shut down the server. Otherwise, start the next game.
+
+    ```java
+    if (!QueueAgainListener.this
+            .plugin
+            .getGameModule()
+            .getGameCycle()
+            .get()
+            .hasNextGame()) {
+        Bukkit.shutdown();
+        return;
+    }
+    QueueAgainListener.this.plugin.getGameModule().startNextGame();
+    ```
+
+    - This ensures that the server either continues to the next game or shuts down if no games are available.
+    </StepItem>
+
+    <StepItem title="Unregister the listener">
+    Finally, unregister the listener and cancel the tasks when the listener is disabled.
+
+    ```java
+    this.bukkitTask.cancel();
+    this.bukkitTask = null;
+    ```
+
+    - This prevents the tasks from continuing to run after the listener is no longer active.
+    </StepItem>
+
+    <StepItem title="Register the listener">
+    Finally, we need to register the `QueueAgainListener` in the `DragonsGame` class.
+
+    Add the listener registration to the setup method in the `DragonsGame` class:
+
+    ```java
+    this.listeners.add(new QueueAgainListener(this, this.dragonsPlugin));
+    ```
+
+    - This adds the `QueueAgainListener` to the list of listeners in the game, ensuring it is triggered during the `ENDED` game state.
+
+    </StepItem>
+
+</Step>

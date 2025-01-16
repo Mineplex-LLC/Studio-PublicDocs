@@ -1,0 +1,251 @@
+---
+title: Spectator Mode Listener
+description: Manages players in spectator mode during the game, including handling player interactions, item pickups, and rejoining the game.
+---
+
+In this tutorial, we will walk through the implementation of the `SpectatorHandler` class. This listener handles players in spectator mode during the `STARTED` game state by:
+- Preventing certain player actions like damage, block interaction, item pickup, and inventory edits.
+- Managing the player's appearance and behavior when they enter spectator mode.
+- Allowing players to rejoin the game or the arcade queue by interacting with specific items.
+
+<Note type="success">
+We're skipping over adding translations in our future steps, we've done this a few times already, so this should be simple!
+
+🔗 [Complete translations file](https://github.com/BillyDotWS/StudioExample-Dragons/blob/master/src/main/resources/i18n/Dragons_en.properties)
+</Note>
+
+### Tutorial
+
+<Step>
+
+    <StepItem title="Create the SpectatorHandler Class">
+    Begin by creating the `SpectatorHandler` class. This class will manage spectator behaviors and interactions during the game. It extends `AbstractStateBasedListener` to listen for events while the game state is `STARTED`.
+
+    🔗 [SpectatorHandler class source code](https://github.com/BillyDotWS/StudioExample-Dragons/blob/master/src/main/java/com/mineplex/studio/dragons/game/listeners/inprogress/spectator/SpectatorHandler.java)
+
+    Here's the basic structure of the class:
+
+    ```java
+    @Slf4j
+    public class SpectatorHandler extends AbstractStateBasedListener {
+        private static final ItemStack PLAY_AGAIN_PAPER;
+        private static final ItemStack PLAY_AGAIN_ARCADE_JUKEBOX;
+        private final QueuingModule queuingModule = MineplexModuleManager.getRegisteredModule(QueuingModule.class);
+
+        public SpectatorHandler(final DragonsGame game, final DragonsPlugin plugin) {
+            super(plugin, game, BuiltInGameState.STARTED);
+        }
+
+        static {
+            PLAY_AGAIN_PAPER = new ItemStack(Material.PAPER);
+            PLAY_AGAIN_PAPER.editMeta(meta -> {
+                meta.displayName(Component.translatable("mineplex.dragons.module.game.spectator.item.paper_name")
+                        .color(NamedTextColor.AQUA));
+            });
+
+            PLAY_AGAIN_ARCADE_JUKEBOX = new ItemStack(Material.JUKEBOX);
+            PLAY_AGAIN_ARCADE_JUKEBOX.editMeta(meta -> {
+                meta.displayName(Component.translatable("mineplex.dragons.module.game.spectator.item.jukebox_name")
+                        .color(NamedTextColor.GREEN));
+            });
+        }
+    }
+    ```
+
+    - This class listens for events related to player actions during the spectator mode and sets up items for rejoining the game.
+    </StepItem>
+
+    <StepItem title="Add a method to check if the player is alive">
+    This will be used in our future event handlers.
+    ```java
+    private boolean isAlive(final Player player) {
+        return this.game.getPlayerState(player).isAlive();
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Handle player damage">
+    We need to prevent damage to players who are in spectator mode. Here's how you can cancel any damage events for players who are not alive:
+
+    ```java
+    @EventHandler(priority = EventPriority.HIGH)
+    public void handleDamageToSelf(final EntityDamageEvent e) {
+        if (!(e.getEntity() instanceof Player player)) return;
+        if (this.isAlive(player)) return;
+        e.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void handleDamageToOthers(final EntityDamageByEntityEvent e) {
+        if (!(e.getDamager() instanceof Player player)) return;
+        if (this.isAlive(player)) return;
+        e.setCancelled(true);
+    }
+    ```
+
+    - These methods check if the player is alive and, if not, cancel any damage events.
+
+    </StepItem>
+
+    <StepItem title="Prevent block interaction">
+    Spectators should not be able to interact with blocks. Here's how to cancel block-related actions for spectators:
+
+    ```java
+    @EventHandler(priority = EventPriority.HIGH)
+    public void handleBlockBreak(final BlockBreakEvent event) {
+        if (this.isAlive(event.getPlayer())) return;
+        event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void handleBlockPlace(final BlockPlaceEvent event) {
+        if (this.isAlive(event.getPlayer())) return;
+        event.setCancelled(true);
+    }
+    ```
+
+    - These handlers prevent spectators from breaking or placing blocks.
+
+    </StepItem>
+
+    <StepItem title="Disable item pickup and inventory edits">
+    Spectators should also be prevented from picking up items or editing their inventory. Here's how:
+
+    ```java
+    @EventHandler(priority = EventPriority.HIGH)
+    public void handleItemPickup(final PlayerPickupItemEvent event) {
+        if (this.isAlive(event.getPlayer())) return;
+        event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void handleDrop(final PlayerDropItemEvent event) {
+        if (this.isAlive(event.getPlayer())) return;
+        event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void handleInventoryEdit(final PlayerInteractEvent event) {
+        if (this.isAlive(event.getPlayer())) return;
+        event.setCancelled(true);
+    }
+    ```
+
+    - These methods ensure that spectators cannot pick up items or interact with their inventory.
+
+    </StepItem>
+
+    <StepItem title="Make player a spectator">
+    When a player dies or is assigned to spectator mode, we make them a true spectator by applying specific effects:
+
+    ```java
+    private void makePlayerSpectator(final Player player) {
+        player.clearActivePotionEffects();
+        player.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 20, 1));
+        player.setInvisible(true);
+        player.setInvulnerable(true);
+        player.setFoodLevel(20);
+        player.setVisualFire(false);
+        player.setAllowFlight(true);
+        player.setFlying(true);
+    }
+    ```
+
+    - This method clears the player's active effects, makes them invisible, and grants flight abilities.
+
+    Call this method from an event handler that reacts to a player's state changing:
+    ```java
+    @EventHandler(priority = EventPriority.HIGH)
+    public void spectatorMode(final PlayerStateChangeEvent e) {
+        if (e.getToState().isAlive()) {
+            return;
+        }
+        this.makePlayerSpectator(e.getPlayer());
+        this.setPlayerSpecInventory(e.getPlayer());
+    }
+    ```
+
+    </StepItem>
+
+    <StepItem title="Set player's spectator inventory">
+    Spectators should have a specific inventory, typically with items to rejoin the game. Here's how you can set the inventory:
+
+    ```java
+    private void setPlayerSpecInventory(final Player player) {
+        player.getInventory().clear();
+
+        if (this.queuingModule.joinedThroughTag(player, "arcade")) {
+            player.getInventory().setItem(0, PLAY_AGAIN_ARCADE_JUKEBOX.clone());
+        }
+
+        player.getInventory().setItem(8, PLAY_AGAIN_PAPER.clone());
+    }
+    ```
+
+    - This method sets the player's inventory with items like "Play Again" paper and arcade jukebox, based on their current state.
+
+    </StepItem>
+
+    <StepItem title="Handle requeue click">
+    When a spectator clicks an item in their inventory, we allow them to rejoin the game or arcade queue. 
+
+    <Note type="success" title="Tag queue">
+    Because our game is an Arcade game, we allow people to join via the `Arcade` tag rotation. We want to show a special inventory item if they joined using this system. This allows people to re-join the rotation. **This is required for all Arcade games**
+
+    🔗 [Tag queuing documentation](http://docs.mineplex.com/docs/sdk/features/queueing#tag-queue)
+    </Note>
+    
+    Here's how to handle it:
+
+    ```java
+    @EventHandler(priority = EventPriority.HIGH)
+    public void handleRequeueClick(final PlayerInteractEvent e) {
+        if (e.getAction() != Action.RIGHT_CLICK_AIR && e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+
+        if (e.getPlayer().getInventory().getItemInMainHand().isSimilar(PLAY_AGAIN_PAPER)) {
+            this.queuingModule.requeuePlayer(e.getPlayer());
+        }
+
+        if (e.getPlayer().getInventory().getItemInMainHand().isSimilar(PLAY_AGAIN_ARCADE_JUKEBOX)) {
+            this.queuingModule.requeuePlayer(e.getPlayer());
+        }
+    }
+    ```
+
+    - This event listens for right-click interactions on specific items (e.g., play again items) to trigger a requeue.
+
+    </StepItem>
+
+    <StepItem title="Make player spectator upon joining">
+    When a player joins and enters spectator mode, we ensure they are set up properly:
+
+    ```java
+    @EventHandler(priority = EventPriority.HIGH)
+    public void join(final PlayerJoinEvent e) {
+        this.game.getPlayerStateTracker().setPlayerState(e.getPlayer(), BuiltInPlayerState.SPECTATOR);
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                SpectatorHandler.this.makePlayerSpectator(e.getPlayer());
+            }
+        }.runTaskLater(this.plugin, 20);
+    }
+    ```
+
+    - This method ensures the player is set as a spectator immediately after joining.
+
+    </StepItem>
+
+    <StepItem title="Register the listener">
+    Finally, register the `SpectatorHandler` in the `DragonsGame` class. This ensures the spectator logic is applied during the `STARTED` game state.
+
+    Within the setup method, we add:
+    ```java
+    this.listeners.add(new SpectatorHandler(this, this.dragonsPlugin));
+    ```
+
+    - This will make sure the `SpectatorHandler` is active and listening for events.
+
+    </StepItem>
+
+</Step>

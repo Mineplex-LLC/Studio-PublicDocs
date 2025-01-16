@@ -13,14 +13,163 @@ export const Documents: Paths[] = [
     href: "/getting-started",
     items: [
       {
-        title: "Example Project",
-        href: "/example-project",
-      },
-      {
         title: "Project Namespaces",
         href: "/namespaces",
       },
     ],
+  },
+  {
+    spacer: true,
+  },
+  {
+    title: "Example Projects",
+    href: "/example-project",
+    items: [
+      {
+        title: "Dragons",
+        href: "/dragons",
+        items: [
+          {
+            title: "Initial Classes",
+            href: "/initial-classes"
+          },
+          {
+            title: "World Loading",
+            href: "/world-loading",
+          },
+          {
+            title: "Game Lifecycle",
+            href: "/state-transitions",
+            items: [
+              {
+                title: "Adding Listeners",
+                href: "/adding-listeners",
+                items: [
+                  {
+                    title: "Pre-Game listeners",
+                    href: "/pregame",
+                    items: [
+                      {
+                        title: "Game Start Countdown",
+                        href: "/countdown",
+                      }
+                    ]
+                  },
+                  {
+                    title: "In Progress Listeners",
+                    href: "/in-progress",
+                    items: [
+                      {
+                        title: "Start Teleport",
+                        href: "/start-teleport",
+                      },
+                      {
+                        title: "Disable Hunger",
+                        href: "/disable-hunger",
+                      },
+                      {
+                        title: "Handle Deaths",
+                        href: "/death",
+                      },
+                      {
+                        title: "Handle Spectators",
+                        href: "/spectator",
+                      }
+                    ]
+                  },
+                  {
+                    title: "End Listeners",
+                    href: "/ended",
+                    items: [
+                      {
+                        title: "Queuing Players",
+                        href: "/queuing",
+                      },
+                      {
+                        title: "Ending Message",
+                        href: "/end-message",
+                      }
+                    ]
+                  }
+                ]
+              },
+            ]
+          },
+          {
+            title: "Core Gameplay",
+            href: "/core-gameplay",
+            items: [
+              {
+                title: "The Dragons",
+                href: "/dragon",
+                items: [
+                  {
+                    title: "NMS Dragon Phase",
+                    href: "/phase"
+                  }
+                ]
+              },
+              {
+                title: "Managing Kits",
+                href: "/kits",
+                items: [
+                  {
+                    title: "Coward Kit",
+                    href: "/coward"
+                  },
+                  {
+                    title: "Pyrotechnic Kit",
+                    href: "/pyrotechnic"
+                  },
+                  {
+                    title: "Kit Selection",
+                    href: "/kit-selector"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            title: "Polishing Off",
+            href: "/polishing",
+            items: [
+              {
+                title: "Mineplex Leveling",
+                href: "/experience",
+                items: [
+                  {
+                    title: "Chat Rendering",
+                    href: "/chat-rendering"
+                  }
+                ]
+                
+              },
+              {
+                title: "Leaderboards",
+                href: "/leaderboard",
+              },
+              {
+                title: "Scoreboard",
+                href: "/scoreboard",
+              },
+              {
+                title: "Statistics",
+                href: "/statistics",
+              },
+            ]
+          },
+          {
+            title: "Staging Testing",
+            href: "/staging-testing",
+          },
+        ],
+      },
+      {
+        title: "Survival Games",
+        href: "/survival-games",
+        deprecated: true
+      }
+    ]
   },
   {
     spacer: true,

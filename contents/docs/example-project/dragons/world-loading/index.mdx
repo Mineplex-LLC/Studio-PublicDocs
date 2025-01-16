@@ -1,0 +1,132 @@
+---
+title: World Loading
+description: How we'll load up worlds in our dragons game
+---
+
+We've already briefly touched on world loading when we loaded up our lobby world. Now we need to add support for loading up our game worlds when the game starts!
+
+You'll set up the `DragonsWorldHolder` class to handle world selection and integrate it into the main game class.
+
+<Step>
+    <StepItem title="Add World Templates">
+        - Place world templates in the `assets/world-templates` directory.
+        - Follow the guidelines in the [World Module Documentation](../../docs/sdk/features/world).
+        - Ensure templates are properly named and stored for seamless loading.
+
+        Here's the `dataPoints.json` schema we'll use in this tutorial:
+    
+    ```json
+    {
+        "BORDER": [
+            {
+                "x": -79,
+                "y": 103,
+                "z": -54,
+                "yaw": 0.0,
+                "pitch": 0.0
+            },
+            {
+                "x": 27,
+                "y": 35,
+                "z": 65,
+                "yaw": 0.0,
+                "pitch": 0.0
+            }
+        ],
+        "SPAWNPOINTS": [
+            {
+                "x": -20,
+                "y": 71,
+                "z": 0,
+                "yaw": 0.0,
+                "pitch": 0.0
+            },
+            {
+                "x": -12.5,
+                "y": 72,
+                "z": 1.2,
+                "yaw": 0.0,
+                "pitch": 0.0
+            },
+            ...(16 required)
+        ]
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Create the `DragonsWorldHolder` Class">
+        The `DragonsWorldHolder` class manages the game world selection and setup. It encapsulates the world selection logic, keeping the `DragonsGame` class focused on game-specific functionality.
+
+        Below is the complete implementation:
+
+        ```java
+        @RequiredArgsConstructor
+        public class DragonsWorldHolder {
+
+            private final DragonsGame dragonsGame;
+            private GameWorldSelectorMechanic gameWorldSelectorMechanic;
+
+            public void setup() {
+                this.gameWorldSelectorMechanic = this.dragonsGame.getGameMechanicFactory()
+                                                                 .construct(GameWorldSelectorMechanic.class);
+                // Blacklist the lobby from being selected as a game world.
+                this.gameWorldSelectorMechanic.setFilter(name -> !"lobby".equalsIgnoreCase(name));
+                // Determine the next map for ::getGameWorld
+                this.gameWorldSelectorMechanic.setup(this.dragonsGame);
+            }
+
+            public MineplexWorld getWorld() {
+                return this.gameWorldSelectorMechanic.getSelectedGameWorld();
+            }
+
+            public void teardown() {
+                this.gameWorldSelectorMechanic.teardown();
+            }
+
+        }
+        ```
+
+        🔗 [DragonsWorldHolder class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/game/world/DragonsWorldHolder.java)
+    </StepItem>
+
+    <StepItem title="Update the Game Class">
+        To integrate the `DragonsWorldHolder`, make the following updates to the `DragonsGame` class:
+
+        #### a. Add a Field for the World Holder
+        - Declare a new field for `DragonsWorldHolder`:
+        ```java
+        private DragonsWorldHolder worldHolder;
+        ```
+
+        #### b. Update the Base Class
+        - Change the `DragonsGame` class to extend `SingleWorldMineplexGame` instead of `MineplexGame`:
+        ```java
+        public class DragonsGame implements SingleWorldMineplexGame {
+            // Class implementation
+        }
+        ```
+
+        #### c. Override the `getGameWorld` Method
+        - Provide the selected game world:
+        ```java
+        @Override
+        public MineplexWorld getGameWorld() {
+            return this.worldHolder.getWorld();
+        }
+        ```
+
+        #### d. Modify the `setup()` Method
+        - Initialize and configure the `DragonsWorldHolder` in the `setup()` method:
+        ```java
+        @Override
+        public void setup() {
+            // Initialize the world holder
+            this.worldHolder = new DragonsWorldHolder(this);
+            this.worldHolder.setup();
+
+            // Other setup logic
+            super.setup();
+        }
+        ```
+    </StepItem>
+</Step>

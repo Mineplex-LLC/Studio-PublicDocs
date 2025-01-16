@@ -1,0 +1,110 @@
+---
+title: State lifecycle
+description: How our state setup works to transition the game to different states
+---
+
+In order for our game to actually work, we define a state lifecycle. This allows us to switch and listen for state changes. Meaning we can trigger our events and mechanics to players.
+
+We've set dragons up to follow this lifecycle:
+![Banner](/images/example-lifecycle.png "Game Lifecycle")
+
+### Game Implementation
+
+We manage these states in our project's Game class, we added this when we first created our `DragonsGame` class. [See here](../../../docs/example-project/dragons/initial-classes#dragonsgame).
+
+We need some way of keeping track of what events we listen for, and define in what Game state these event listeners actually matter in (we don't want people falling in the void during pre-game to wipe them out, do we?).
+
+<Step>
+
+    <StepItem title="Define a `StateBasedListener` Interface">
+    To easily re-use state based listeners, we need to make an interface that all of our created listeners will inherit.
+
+    We create an interface that all state-based listeners will implement. This interface ensures that each listener can register, unregister, and identify its associated game state.
+    
+    🔗 [StateBasedListener class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/game/listeners/StateBasedListener.java)
+
+    ```java
+    /**
+    * Interface for listeners that are tied to specific game states.
+    * This allows dynamic registration and unregistration of listeners
+    * based on the active game state in the game lifecycle.
+    */
+    public interface StateBasedListener extends Listener {
+
+        /**
+        * Registers the listener with the event system.
+        * This method is called when the listener becomes active
+        * for its associated game state.
+        */
+        void register();
+
+        /**
+        * Unregisters the listener from the event system.
+        * This method is called when the listener is no longer
+        * needed for its associated game state.
+        */
+        void unregister();
+
+        /**
+        * Gets the game state associated with this listener.
+        * 
+        * @return the {@link GameState} that this listener is tied to.
+        */
+        GameState getActiveState();
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Holding State Listeners in our game">
+
+    In addition to what we've done already - we need to define a set of listeners within our game class: this will keep track of each state and it's associated Bukkit listeners.
+
+    Within `DragonsGame.java`, we add a list of listeners: this will hold
+    ```java
+    private final Set<StateBasedListener> listeners = new HashSet<>();
+    ```
+
+    </StepItem>
+
+    <StepItem title="A function to assist">
+    So we can re-use code to grab our listeners for a state, we'll add a function.
+    ```java
+    public Set<StateBasedListener> getListenersByState(final GameState gameState) {
+        return this.listeners.stream()
+                .filter(stateBasedListener -> stateBasedListener.getActiveState().equals(gameState))
+                .collect(Collectors.toSet());
+    }
+    ```
+    This allows us to grab all of our listeners associated with a given state, for example:
+    ```java
+    game.getListenersByState(BuiltInGameState.STARTED)
+    ```
+    This would give us a list of our listeners for the 'STARTED' (in progress) state.
+    </StepItem>
+
+    <StepItem title="Add another function for registering and unregistering">
+    When we switch states, we want to register all of the target states' listeners: and remove the old states' listeners.
+    ```java
+        private void handleStateSwitch(final GameState previousState, final GameState newState) {
+        if (previousState != null) {
+            this.getListenersByState(previousState).forEach(StateBasedListener::unregister);
+        }
+        if (newState != null) {
+            this.getListenersByState(newState).forEach(StateBasedListener::register);
+        }
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Add a listener in our game to handle state changes">
+    When our game changes state, we now want to call the method we just defined, so that we can trigger our plugin to listen to any state-based events.
+    ```java
+    @EventHandler
+    public void handleStateChangeEvent(final PostMineplexGameStateChangeEvent stateChangeEvent) {
+        this.handleStateSwitch(stateChangeEvent.getFromState(), stateChangeEvent.getToState());
+    }
+    ```
+    </StepItem>
+
+</Step>
+

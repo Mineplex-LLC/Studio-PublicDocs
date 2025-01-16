@@ -1,0 +1,61 @@
+---
+title: Kits
+description: Kits that change how the game is played
+---
+
+![Kits](/images/kits.png "Kits")
+
+### Overview of Kits
+
+In our game, players can choose from two different kits, each offering unique advantages and gameplay mechanics. These kits are designed to enhance the player's experience by providing special abilities and equipment that change how they interact with the game world.
+
+#### Pyrotechnic Kit
+The Pyrotechnic kit is for players who enjoy drawing the dragons’ attention. This kit is equipped with tools to manipulate the game’s dynamic dragon behavior.
+
+- **Armor**: Full Golden Armor for durability and protection.
+- **Special Ability**: Players receive 1 sparkler every 25 seconds, with a maximum of 2. Sparklers can be thrown to any location on the map to attract dragons to that spot, providing a tactical advantage by luring the dragons away from the player’s current location or towards enemies.
+
+#### Coward Kit
+The Coward kit focuses on stealth and evasion, perfect for players who prefer to avoid direct confrontation.
+
+- **Armor**: Full Leather Armor, offering basic protection but not as much as higher-tier armors.
+- **Special Ability**: An Iron Axe that grants players the ability to leap when right-clicked, helping them escape danger or quickly traverse the map. This is perfect for creating distance or evading attacks from dragons or other players.
+
+### Let's setup some stuff first:
+
+<Step>
+
+    <StepItem title="Declare Mechanics as Fields">
+    First, add the required fields to your `DragonsGame` class to store the mechanics:
+    ```java
+    private AbilityMechanic abilityMechanic;
+    private KitMechanic kitMechanic;
+    ```
+    These fields will allow the game to manage kits and abilities effectively, providing a centralized way to initialize and access them.
+    </StepItem>
+
+    <StepItem title="Initialize the Kit mechanic">
+    In the `setup` method of your `DragonsGame` class, construct and set up the `KitMechanic`:
+    ```java
+    this.kitMechanic = this.gameMechanicFactory.construct(KitMechanic.class);
+    this.kitMechanic.setup(this);
+    ```
+    - Constructs the `KitMechanic` using the factory.  
+    - Prepares it to manage kits within the game, such as assigning or removing them.
+
+    🔗 [Kit Mechanic Documentation](http://docs.mineplex.com/docs/sdk/features/game/mechanics/kit)
+    </StepItem>
+
+    <StepItem title="Initialize the Ability Mechanic">
+    Next, in the same `setup` method, construct and set up the `AbilityMechanic`:
+    ```java
+    this.abilityMechanic = this.gameMechanicFactory.construct(AbilityMechanic.class);
+    this.abilityMechanic.setup(this);
+    ```
+    - Constructs the `AbilityMechanic` using the factory.  
+    - Prepares it to handle abilities like the Coward's leap, ensuring they're properly registered and functional.
+
+    🔗 [Ability Mechanic Documentation](http://docs.mineplex.com/docs/sdk/features/game/mechanics/ability)
+    </StepItem>
+
+</Step>

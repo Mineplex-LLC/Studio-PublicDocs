@@ -1,0 +1,449 @@
+---
+title: Pyrotechnic Kit
+description: A kit that attracts dragons towards a thrown Sparkler
+---
+
+The Pyrotechnic Kit introduces a dynamic and tactical ability to influence dragon behavior during gameplay. By throwing sparkler items, players can attract dragons to specific locations, making it an effective tool for both offense and sabotage.
+
+### Kit Features
+- **Armor**: Full golden armor set for added protection.
+- **Sparkler Ability**:
+  - Automatically receives 1 sparkler every **25 seconds** (maximum of 2 sparklers).
+  - Sparklers can be thrown to any location on the map.
+  - **Effect**: Attracts dragons to the location of the thrown sparkler, creating opportunities for strategic gameplay.
+
+![Dragon Sparkle](/images/dragons-sparkle.gif "Sparkle Effect")
+
+### Adding the kit
+
+<Step>
+
+    <StepItem title="Create the kit class">
+    First things first, we need a class to house our kit, we'll be implementing a handy Mineplex SDK kit interface `Kit<DragonsGame>`
+
+    🔗 [View the kit documentation](https://docs.mineplex.com/docs/sdk/features/game/mechanics/kit)
+
+    🔗 [PyrotechnicKit class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/kits/PyrotechnicKit.java)
+    ```java
+    public class PyrotechnicKit implements Kit<DragonsGame> {
+        @Override
+        public @NonNull KitMechanic getKitMechanic() { return null; }
+
+        @Override
+        public @NonNull DragonsGame getGame() { return null; }
+
+        @Override
+        public @NonNull String getName() { return "Pyrotechnic"; }
+
+        @Override
+        public void setup(@NonNull DragonsGame game) { }
+
+        @Override
+        public void teardown() { }
+
+        @Override
+        public void giveKit(@NonNull LivingEntity livingEntity) { }
+
+        @Override
+        public void removeKit(@NonNull LivingEntity livingEntity) { }
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Implementing some of the methods">
+    First, let's mark the class as `@Getter` and `@RequiredArgsConstructor` (as we did last time!)
+    ```java
+    @RequiredArgsConstructor
+    @Getter
+    public class PyrotechnicKit implements Kit<DragonsGame> {
+    ```
+
+    Then, let's add some helper mechanics, and our game class to our fields (same as with our Coward kit)
+    ```java
+    // used to distribute and manage kits
+    private final KitMechanic kitMechanic;
+
+    // used to manage abilities
+    private final AbilityMechanic abilityMechanic;
+
+    private final DragonsGame game;
+    ```
+    </StepItem>
+
+    <StepItem title="Register the Pyrotechnic kit in the game">
+    We need to register it in the `DragonsGame` class. This will make sure that the kit is available to our kit mechanic.
+
+    In your `DragonsGame` class, add the Pyrotechnic Kit to the kit registry within the `setup()` method
+    ```java
+    this.kitMechanic.registerKit(this, PyrotechnicKit.class, new PyrotechnicKit(this.kitMechanic, this.abilityMechanic, this));
+    ```
+    </StepItem>
+
+</Step>
+
+### Adding the sparkler ability
+
+Next, we're going to have to create our ability, as mentioned: a throwable sparkler item.
+
+<Note type="success">
+We're skipping over adding translations in our future steps, we've done this a few times already, so this should be simple!
+
+🔗 [Complete translations file](https://github.com/BillyDotWS/StudioExample-Dragons/blob/master/src/main/resources/i18n/Dragons_en.properties)
+</Note>
+
+🔗 [SparklerAbility class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/kits/ability/SparklerAbility.java)
+
+<Step>
+
+    <StepItem title="Add SparklerAbility class">
+    Begin by creating the `SparklerAbility` class:
+    ```java
+    public class SparklerAbility implements ActiveAbility<DragonsGame> {
+        @Override
+        public void activate(@NonNull LivingEntity livingEntity) {}
+
+        @Override
+        public void deactivate(@NonNull LivingEntity livingEntity) {}
+
+        @Override
+        public @NonNull AbilityMechanic getAbilityMechanic() { return null; }
+
+        @Override
+        public @NonNull DragonsGame getGame() { return null; }
+
+        @Override
+        public @NonNull String getName() { return ""; }
+
+        @Override
+        public void setup(@NonNull DragonsGame game) {}
+
+        @Override
+        public void teardown() {}
+
+        @Override
+        public void start(@NonNull LivingEntity livingEntity) {}
+
+        @Override
+        public void stop(@NonNull LivingEntity livingEntity) {}
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Enhance SparklerAbility class">
+    Add necessary imports, fields, and annotations to define the full functionality of the SparklerAbility. Update your class like this:
+    ```java
+    private final DragonsGame game;
+
+    // map for player -> task to give out sparklers
+    private final Map<UUID, BukkitTask> bukkitTaskMap = new HashMap<>();
+
+    // our item stack for the sparklers
+    private static final ItemStack itemStack;
+    static {
+        itemStack = new ItemStack(Material.EMERALD);
+        itemStack.editMeta(meta ->
+                meta.displayName(Component.translatable("mineplex.dragons.module.game.kit.pyrotechnic.sparkler_name")
+                        .color(NamedTextColor.GREEN)));
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Give people sparkler items on a timer">
+    ```java
+        @Override
+    public void start(@NonNull final LivingEntity livingEntity) {
+        if (!(livingEntity instanceof final Player player)) {
+            throw new IllegalArgumentException("SparklerAbility can only be applied to players.");
+        }
+
+        // safety net in-case we call start twice.
+        if(this.bukkitTaskMap.containsKey(player.getUniqueId())) {
+            return;
+        }
+
+        this.bukkitTaskMap.put(
+                player.getUniqueId(),
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        if (player.isDead()) {
+                            SparklerAbility.this.deactivate(player);
+                            return;
+                        }
+
+                        // if player is dead, de-activate the giving
+                        if (!SparklerAbility.this.game.getPlayerState(player).isAlive()) {
+                            SparklerAbility.this.deactivate(player);
+                            return;
+                        }
+
+                        final PlayerInventory inventory = player.getInventory();
+                        int emeraldCount = 0;
+
+                        // Count emeralds in all inventory slots
+                        for (final ItemStack item : inventory.getContents()) {
+                            if (item != null && item.isSimilar(itemStack)) {
+                                emeraldCount += item.getAmount();
+                            }
+                        }
+
+                        // Add emerald if there are less than 2
+                        if (emeraldCount < 2) {
+                            final ItemStack emerald = SparklerAbility.itemStack.clone();
+                            inventory.addItem(emerald);
+                        }
+                    }
+                }.runTaskTimer(this.getGame().getDragonsPlugin(), 0, 25 * 20));
+    }
+    ```
+
+    You'll also want to handle cleaning up once the game is over!
+    ```java
+    @Override
+    public void stop(@NonNull final LivingEntity livingEntity) {
+
+        if (!(livingEntity instanceof final Player player)) {
+            throw new IllegalArgumentException("SparklerAbility can only be applied to players.");
+        }
+
+        final EntityEquipment equipment = livingEntity.getEquipment();
+        equipment.clear();
+
+        if (this.bukkitTaskMap.containsKey(player.getUniqueId())) {
+            this.bukkitTaskMap.get(player.getUniqueId()).cancel();
+            this.bukkitTaskMap.remove(player.getUniqueId());
+        }
+    }
+
+    @Override
+    public void teardown() {
+        this.bukkitTaskMap.forEach((key, value) -> value.cancel());
+        this.bukkitTaskMap.clear();
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Create our event listener">
+    As we're handling a dropped item, we need to listen for the drop and act upon it.
+    ```java
+    @EventHandler
+    public void onPlayerDropItem(final PlayerDropItemEvent event) {
+        final Item droppedItem = event.getItemDrop();
+
+        // Check if the dropped item is our sparkler item
+        if (droppedItem.getItemStack().isSimilar(itemStack)) {
+
+            // Make the item non-pickable
+            droppedItem.setPickupDelay(Integer.MAX_VALUE);
+
+        }
+
+    }
+    ```
+    If an emerald is dropped, we set it so it can never be picked up.
+    </StepItem>
+
+    <StepItem title="Add a way to get registered listeners">
+    Since the list of dragons for our game is held in our `DragonSpawnListener`, we'll need to add a generic way to fetch listeners by a given listener class.
+
+    In our main game class (`DragonsGame`)
+    ```java
+    // optional because there's no guarantee this class has a registered instance
+    public <T> Optional<T> getRegisteredListener(final Class<? extends T> listenerClass) {
+        return (Optional<T>) this.getListeners().stream()
+                .filter(stateBasedListener -> stateBasedListener.getClass().equals(listenerClass))
+                .findFirst();
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Pick a random dragon">
+    Using our new method, we'll use this to fetch the listener instance of `DragonSpawnListener` and fetch the list of current dragons.
+    
+    To do this, we'll add to our `SparklerAbility`, we'll choose a random dragon from  and make it attract to our sparkler.
+
+    We'll use the `targetSparkler` method we added when working with our [Dragon Phase](../dragon/phase) behaviour.
+    ```java
+    @EventHandler
+    public void onPlayerDropItem(final PlayerDropItemEvent event) {
+        final Item droppedItem = event.getItemDrop();
+
+        // Check if the dropped item is an emerald
+        if (droppedItem.getItemStack().isSimilar(itemStack)) {
+
+            // Make the item non-pickable
+            droppedItem.setPickupDelay(Integer.MAX_VALUE);
+
+            // fetch the list of dragons
+            final List<MineplexDragon> dragons = this.game
+                .getRegisteredListener(DragonSpawnListener.class)
+                // this is a safe orElseThrow() as we registered it when adding our dragon behaviour
+                .orElseThrow() 
+                .getDragonList();
+
+            // Check if there are any dragons
+            if (!dragons.isEmpty()) {
+                // Pick a random dragon
+                final MineplexDragon selectedDragon = dragons.get(new Random().nextInt(dragons.size()));
+
+                // Set the sparkler target for the selected dragon
+                selectedDragon.getPhase().targetSparkler(droppedItem.getLocation());
+            }
+
+        }
+
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Create a firework utility">
+    Since we may want to re-use this firework effect in future, it's utility time!
+
+    🔗 [FireworkUtil class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/utils/FireworkUtil.java)
+
+    ```java
+    @UtilityClass
+    public class FireworkUtil {
+
+        public static void playFirework(final DragonsPlugin plugin, final Location loc, final FireworkEffect fe) {
+            final Firework firework = loc.getWorld().spawn(loc, Firework.class);
+            final FireworkMeta data = firework.getFireworkMeta();
+            data.clearEffects();
+            data.setPower(1);
+            data.addEffect(fe);
+            firework.setFireworkMeta(data);
+
+            // Set firework lifespan to 1 tick
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    firework.detonate(); // Detonates the firework after 1 tick
+                }
+            }.runTaskLater(plugin, 1); // Adjust your plugin instance here
+        }
+
+        public static void playFirework(
+                final DragonsPlugin plugin,
+                final Location loc,
+                final FireworkEffect.Type type,
+                final Color color,
+                final boolean flicker,
+                final boolean trail) {
+            playFirework(
+                    plugin,
+                    loc,
+                    FireworkEffect.builder()
+                            .flicker(flicker)
+                            .withColor(color)
+                            .with(type)
+                            .trail(trail)
+                            .build());
+        }
+    }
+    ```
+
+    This allows us to build a firework quickly and it's re-usable
+    </StepItem>
+
+    <StepItem title="Implement the sparkle">
+    In order to make it sparkle, we make a repeating task that counts the ticks and every second, sparkles! After 10s, we remove the item to stop it being annoying!
+
+    We add this to the bottom of our event handler (within the emerald check statement).
+    ```java
+    @EventHandler
+    public void onPlayerDropItem(final PlayerDropItemEvent event) {
+        if (droppedItem.getItemStack().isSimilar(itemStack)) {
+            
+            // rest of the code...
+
+            new BukkitRunnable() {
+                int ticks = 0;
+
+                @Override
+                public void run() {
+                    if (this.ticks % 20 == 0) {
+                        FireworkUtil.playFirework(
+                                SparklerAbility.this.plugin,
+                                droppedItem.getLocation(),
+                                FireworkEffect.Type.BURST,
+                                Color.LIME,
+                                false,
+                                false);
+                    }
+
+                    if (this.ticks++ >= 200) {
+                        // Remove the dropped item
+                        droppedItem.remove();
+                        this.cancel();
+                    }
+                }
+            }.runTaskTimer(this.plugin, 60L, 1L); // Run every tick (1/20th of a second)
+        }
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Stop the damage">
+    In modern game versions, fireworks damage players.
+
+    We'll have to cancel that so people don't kill eachother!
+
+    ```java
+    @EventHandler
+    public void handleFireworkDamage(final EntityDamageByEntityEvent damageByEntityEvent) {
+        if (damageByEntityEvent.getDamager() instanceof Firework) {
+            damageByEntityEvent.setCancelled(true);
+        }
+    }
+    ```
+    </StepItem>
+
+</Step>
+
+### Register the ability within the kit
+
+Now we've created our ability, it's back to our `PyrotechnicKit` class!
+
+<Step>
+
+   <StepItem title="Add the ability to the kit">
+    We need to register the ability as part of the kit! And clean it up properly once the game ends!
+    ```java
+    @Override
+    public void setup(@NonNull final DragonsGame game) {
+        this.abilityMechanic.registerAbility(game, SparklerAbility.class, new SparklerAbility(this.abilityMechanic, game));
+    }
+
+    @Override
+    public void teardown() {
+        this.abilityMechanic.destroyAbility(SparklerAbility.class);
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Give and remove the items from the player">
+    Within the `PyrotechnicKit` class: this kit has an armor set, so we'll need to add and remove items from the player when it's activated and deactivated.
+
+    ```java
+    @Override
+    public void giveKit(@NonNull final LivingEntity livingEntity) {
+        // Apply gear
+        final EntityEquipment equipment = livingEntity.getEquipment();
+        if (equipment != null) {
+            equipment.setHelmet(ItemStack.of(Material.GOLDEN_HELMET));
+            equipment.setChestplate(ItemStack.of(Material.GOLDEN_CHESTPLATE));
+            equipment.setLeggings(ItemStack.of(Material.GOLDEN_LEGGINGS));
+            equipment.setBoots(ItemStack.of(Material.GOLDEN_BOOTS));
+        }
+        this.abilityMechanic.grantAbility(livingEntity, SparklerAbility.class);
+    }
+
+    @Override
+    public void removeKit(@NonNull final LivingEntity livingEntity) {
+        this.abilityMechanic.removeAbility(livingEntity, SparklerAbility.class);
+    }
+    ```
+    </StepItem>
+
+</Step>
+

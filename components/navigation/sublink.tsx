@@ -35,7 +35,7 @@ export default function SubLink(props: Paths & { level: number; isSheet: boolean
     return null;
   }
 
-  const { title, href, items, noLink, level, isSheet } = props;
+  const { title, href, items, noLink, level, isSheet, deprecated = false } = props;
 
   const Comp = (
     <Anchor activeClassName="text-primary text-sm font-medium" href={href}>
@@ -50,7 +50,8 @@ export default function SubLink(props: Paths & { level: number; isSheet: boolean
   );
 
   if (!items) {
-    return <div className="flex flex-col text-sm">{titleOrLink}</div>;
+    
+    return <div className={cn(deprecated ? "flex flex-col text-sm text-gray-500 line-through" : "flex flex-col text-sm")}>{titleOrLink}</div>;
   }
 
   return (
@@ -90,6 +91,7 @@ export default function SubLink(props: Paths & { level: number; isSheet: boolean
                 href: `${href}${innerLink.href}`,
                 level: level + 1,
                 isSheet,
+                deprecated: innerLink.deprecated,
               };
 
               return <SubLink key={modifiedItems.href} {...modifiedItems} />;
