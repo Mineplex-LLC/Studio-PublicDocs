@@ -119,6 +119,10 @@ export const Documents: Paths[] = [
             href: "/levels",
           },
           {
+            title: "Lobby Module",
+            href: "/lobby",
+          },
+          {
             title: "Messaging Module",
             href: "/messaging",
           },

@@ -1,0 +1,39 @@
+---
+title: Lobby Module
+description: How to use the Mineplex Studio Lobby Module.
+---
+
+<JavadocLink classpath="com.mineplex.studio.sdk.modules.lobby.LobbyModule"/>
+
+The `LobbyModule` is a module for managing the lobby world in the Mineplex system. It provides methods for creating, setting, and retrieving active lobby.
+
+## Key Features
+- Create a Lobby: Create a new `StudioLobby` instance by providing a `MineplexWorld`.
+- Set a Lobby: Creating a lobby by itself does not do anything. For lobby to be registered, it has to be explicitly set.
+- Retrieve Active Lobby: Returns currently active `StudioLobby` instance, that was set before.
+
+## Creating and Setting a Lobby
+To create and activate a lobby, use the Module's `createBasicLobby` method followed by `setActiveLobby`:
+
+```java
+final LobbyModule lobbyModule = MineplexModuleManager.getRegisteredModule(LobbyModule.class);
+final MineplexWorld lobbyWorld = ... // MineplexWorld to be used as lobby. see WorldModule for instructions on world creation
+final StudioLobby lobby = lobbyModule.createBasicLobby(lobbyWorld);
+lobbyModule.setActiveLobby(lobby);
+lobbyModule.setup();
+```
+
+## Joining the Lobby
+Whenever player joins the game, they will be respawned in the same world and location they left from,
+as long as there is such world and it is still valid. If player connects to the container for the first time,
+or the world they were in is no longer valid, they will be respawned in the active lobby, as long as one exists,
+at the world spawn location.
+
+Once game reaches end state, (that is, `MineplexGame#getGameState().isEnded()` returns `true`), all players will be
+teleported back to the active lobby.
+
+
+<Note type="warning">
+    Even if active game exists and contains a valid `MineplexWorld`, players will not be teleported to it from lobby.
+    All teleportation from lobby to the game have to be done manually.
+</Note>
