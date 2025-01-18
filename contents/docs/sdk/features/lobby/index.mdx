@@ -11,16 +11,26 @@ The `LobbyModule` is a module for managing the lobby world in the Mineplex syste
 - Create a Lobby: Create a new `StudioLobby` instance by providing a `MineplexWorld`.
 - Set a Lobby: Creating a lobby by itself does not do anything. For lobby to be registered, it has to be explicitly set.
 - Retrieve Active Lobby: Returns currently active `StudioLobby` instance, that was set before.
+- Checking for player presence in a lobby
 
 ## Creating and Setting a Lobby
 To create and activate a lobby, use the Module's `createBasicLobby` method followed by `setActiveLobby`:
 
 ```java
 final LobbyModule lobbyModule = MineplexModuleManager.getRegisteredModule(LobbyModule.class);
-final MineplexWorld lobbyWorld = ... // MineplexWorld to be used as lobby. see WorldModule for instructions on world creation
+final MineplexWorld lobbyWorld = ... // MineplexWorld to be used as lobby. see MineplexWorldModule for instructions on world creation
 final StudioLobby lobby = lobbyModule.createBasicLobby(lobbyWorld);
 lobbyModule.setActiveLobby(lobby);
 lobbyModule.setup();
+```
+
+## Checking for Player Presence
+To check if player is currently in a lobby world, use the StudioLobby's `isInLobby` method:
+```java
+final Player player = ... // player to check for
+final LobbyModule lobbyModule = MineplexModuleManager.getRegisteredModule(LobbyModule.class);
+final Optional<StudioLobby> lobbyOption = lobbyModule.getActiveLobby();
+final boolean isPlayerInLobby = lobbyOption.map(lobby -> lobby.isInLobby(player)).orElse(false);
 ```
 
 ## Joining the Lobby
