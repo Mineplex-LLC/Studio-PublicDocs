@@ -1,0 +1,57 @@
+---
+title: Lobby Module
+description: How to use the Mineplex Studio Lobby Module.
+---
+
+<JavadocLink classpath="com.mineplex.studio.sdk.modules.lobby.LobbyModule"/>
+
+The `LobbyModule` is a module for managing the pre-game waiting lobby world in the Mineplex system.
+Lobbies traditionally contain functionality for players that they can use while waiting for the upcoming game, such as:
+- Team Selection
+- Kit Selection
+- Map Voting
+- Statistics NPC
+
+Module provides methods for creating, setting, retrieving and interacting with the active lobby.
+
+## Key Features
+- Create a Lobby: Create a new `StudioLobby` instance by providing a `MineplexWorld`.
+- Set a Lobby: Make `StudioLobby` instance become the active lobby.
+- Retrieve Active Lobby: Returns currently active `StudioLobby` instance that was set before.
+- Checking for player presence in a lobby.
+
+## Creating and Setting a Lobby
+To create and activate a lobby, use the Module's `createBasicLobby` method followed by `setActiveLobby`:
+```java
+final LobbyModule lobbyModule = MineplexModuleManager.getRegisteredModule(LobbyModule.class);
+final MineplexWorld lobbyWorld = ... // MineplexWorld to be used as lobby. see MineplexWorldModule for instructions on world creation
+final StudioLobby lobby = lobbyModule.createBasicLobby(lobbyWorld);
+lobbyModule.setActiveLobby(lobby);
+lobbyModule.setup();
+```
+
+View full information on `MineplexWorldModule` [here](/docs/sdk/features/world).
+
+## Checking for Player Presence
+To check if player is currently in a lobby world, use the StudioLobby's `isInLobby` method:
+```java
+final Player player = ... // player to check for
+final LobbyModule lobbyModule = MineplexModuleManager.getRegisteredModule(LobbyModule.class);
+final Optional<StudioLobby> lobbyOption = lobbyModule.getActiveLobby();
+final boolean isPlayerInLobby = lobbyOption.map(lobby -> lobby.isInLobby(player)).orElse(false);
+```
+
+## Joining the Lobby
+Whenever a player joins the game, they will be respawned in the same world and location they left from,
+as long as there is such world and it is still valid. If a player connects to the container for the first time,
+or the world they were in is no longer valid, they will be respawned in the active lobby, as long as one exists,
+at the world spawn location.
+
+Once game reaches end state, (that is, `MineplexGame#getGameState().isEnded()` returns `true`), all players will be
+teleported back to the active lobby.
+
+
+<Note type="warning">
+    Even if active game exists and contains a valid `MineplexWorld`, players will not be teleported to it from lobby.
+    All teleportation from lobby to the game have to be done manually.
+</Note>
