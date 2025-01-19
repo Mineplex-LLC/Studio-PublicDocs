@@ -1,0 +1,199 @@
+---
+title: The Dragons
+description: Creating the dragons
+---
+
+![Dragon](https://i.makeagif.com/media/3-08-2021/DGZ1vK.gif "Dragon")
+
+The dragons: where would we be without them? A very boring minigame, that's for sure! 
+
+In order to make our games' core goal actually work, we need to spawn some dragons!
+
+<Step>
+
+    <StepItem title="Create the listener class">
+    ```java
+    @Slf4j
+    public class DragonSpawnListener extends AbstractStateBasedListener {
+        public DragonSpawnListener(final DragonsGame game, final DragonsPlugin plugin) {
+            super(plugin, game, BuiltInGameState.STARTED);
+        }
+    }
+    ```
+
+    🔗 [DragonSpawnListener class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/game/listeners/inprogress/dragons/DragonSpawnListener.java)
+    </StepItem>
+
+    <StepItem title="Register our listener instance">
+    In our main `DragonsGame` class, as always, we must register our state listener!
+
+    ```java
+    @Override
+    public void setup() {
+
+        // after our existing listener code!
+        this.listeners.add(new DragonSpawnListener(this, this.dragonsPlugin));
+
+        // ...
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Create a method to spawn a dragon!">
+    We'll need to spawn in some dragons, time for a method to do it!
+
+    We'll start by adding a static list of dragon names to our class, these will be randomly picked from and assigned to each Dragon as it spawns!
+    ```java
+    private static final List<String> dragonNames = Arrays.asList(
+        "Douglas", "Deidra", "Daphne", "Dexter", "Dorian", "Damien", "Darla", "Dylan", "Darius", "Delilah",
+        "Darwin", "Dawn", "Donovan", "Diana", "Dante", "Dakota", "Desmond", "Dominic", "Delaney", "Dahlia");
+    ```
+
+    Then we'll use these names, and use Paper's mob spawning API to let us spawn a **Bukkit EnderDragon** (this will get confusing in a bit, for now, this is a Bukkit entity, keep that in mind).
+    ```java
+    private EnderDragon spawnDragon() {
+        return this.game
+            .getSpectatorLocation()
+            .getWorld()
+            .spawn(this.game.getSpectatorLocation().clone().add(0, 30, 0), EnderDragon.class, d -> {
+                d.customName(
+                        Component.text(dragonNames.get(new Random().nextInt(dragonNames.size())) + " The Dragon")
+                                .color(NamedTextColor.LIGHT_PURPLE)
+                                .decorate(TextDecoration.BOLD));
+            });
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Hit the method">
+    Now let's override our setup method, this gets called on state change to in progress, as we've seen before!
+    ```java
+    @Override
+    public void register() {
+        super.register();
+
+        // bukkit dragon
+        final EnderDragon enderDragon = DragonSpawnListener.this.spawnDragon();
+
+    }
+    ```
+
+    We'll be using this in a new class.
+    </StepItem>
+
+    <StepItem title="Create a new holding class for our dragon">
+    To keep our code clean and maintain object orientated standards, we'll be creating a MineplexDragon class. This part will become pretty pivotal soon.
+
+    🔗 [MineplexDragon class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/game/listeners/inprogress/dragons/MineplexDragon.java)
+
+    ```java
+    public class MineplexDragon {
+        private final DragonsGame game;
+        private final EnderDragon entity;
+
+        public MineplexDragon(final DragonsGame host, final EnderDragon entity) {
+            this.game = host;
+            this.entity = entity;
+        }
+    }
+    ```
+
+    **We'll expand upon this object in the next tutorial page, as it gets pretty spicy.**
+    </StepItem>
+
+    <StepItem title="Hold them in a list of dragons">
+    When we come to add extra features to our game, like a scoreboard or sparkles, we'll need to know which dragon instances we have flying around!
+
+    To do this, we'll store the list of our created dragon objects in a field within our `DragonSpawnListener`.
+
+    ```java
+    @Getter
+    private final List<MineplexDragon> dragonList = new ArrayList<>();
+    ```
+
+    Then in our `register()` method, we'll be using the dragon we created in **Step 4** to create an instance of `MineplexDragon`
+
+    ```java
+    @Override
+    public void register() {
+        super.register();
+
+        // bukkit dragon
+        final EnderDragon enderDragon = DragonSpawnListener.this.spawnDragon();
+
+        // create mineplex dragon & add to our list
+        this.dragonList.add(new MineplexDragon(DragonSpawnListener.this.game, enderDragon));
+
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Create more dragons on a timer">
+    Every 60 seconds, we'll want to add an extra dragon to the skies, let's do that!
+
+    ```java
+    @Override
+    public void register() {
+        super.register();
+
+        // bukkit dragon
+        final EnderDragon enderDragon = DragonSpawnListener.this.spawnDragon();
+
+        // create mineplex dragon & add to our list
+        this.dragonList.add(new MineplexDragon(DragonSpawnListener.this.game, enderDragon));
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                // if our game isn't in progress, let's remove this task: to avoid cleanup issues.
+                if (!DragonSpawnListener.this.game.getGameState().isInProgress()) {
+                    this.cancel();
+                    return;
+                }
+                // create a new Bukkit dragon instance
+                final EnderDragon enderDragon = DragonSpawnListener.this.spawnDragon();
+                // create a new MineplexDragon and add it to our list
+                DragonSpawnListener.this.dragonList.add(new MineplexDragon(DragonSpawnListener.this.game, enderDragon));
+            }
+        }.runTaskTimer(this.plugin, 30 * 20, 30 * 20); // run every 60s, with a 60s delay
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Broadcast that we've spawned a dragon!">
+    To inform players we've spawned a dragon, let's announce it in chat!
+
+    First, another translation needs to be added to our `Dragons_en.properties` resources file!
+    ```properties
+    mineplex.dragons.module.game.dragon_spawned=<0> has woken up and is very angry!
+    ```
+
+    Then, we'll need to make a method in our class to announce the dragon has spawned!
+
+    ```java
+    private void broadcastSpawn(final EnderDragon dragon) {
+        Bukkit.broadcast(Component.join(
+                JoinConfiguration.spaces(),
+                // using PrefixUtil we created in a previous tutorial
+                PrefixUtil.getPrefix("Game"), 
+                Component.translatable("mineplex.dragons.module.game.dragon_spawned", dragon.customName())
+                        .color(NamedTextColor.GRAY)));
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Cleaning up">
+    Let's clear up the dragons list when the listener is unregistered! This will stop any entities causing some memory leaks.
+
+    ```java
+    @Override
+    public void unregister() {
+        super.unregister();
+        this.dragonList.forEach(MineplexDragon::teardown);
+        this.dragonList.clear();
+    }
+    ```
+    </StepItem>
+
+
+</Step>

@@ -1,0 +1,180 @@
+---
+title: Dragon Phase NMS
+description: Using the NMS codebase to create a custom dragon phase
+---
+
+Unlike other mobs, ender dragons don't have pathfinder support in Spigot, nor do they allow you to juggle MobGoals. This was a pain, as now we're left with not much choice other than to use reflection and NMS (net.minecraft.server) classes.
+
+Using this [Spigot thread](https://www.spigotmc.org/threads/nms-enderdragon-make-the-enderdragon-fly-towards-certain-cords.650252/page-4#post-4756136) for information on how, we figured out we could use reflection to override what the dragon uses as it's phase behaviour.
+
+Using this class, we get to set a vector location we want the dragon to target, and it animates and makes it look like it's flying randomly.
+
+🔗 [CustomPhase class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/game/listeners/inprogress/dragons/CustomPhase.java)
+
+## Tutorial
+<Step>
+
+    <StepItem title="Create the new class">
+    We'll first create a class that extends `AbstractDragonPhaseInstance` - Minecraft's abstract base class for all of it's dragon flight behaviour.
+
+    ```java
+    @Slf4j
+    public class CustomPhase extends AbstractDragonPhaseInstance {
+
+        private Location targetLocation;
+        private final DragonsGame dragonsGame;
+
+        public CustomPhase(final EnderDragon dragon, final DragonsGame dragonsGame) {
+            super(dragon);
+            this.dragonsGame = dragonsGame;
+            this.targetLocation = dragonsGame.getSpectatorLocation();
+        }
+
+        @Override
+        public @NotNull EnderDragonPhase<? extends DragonPhaseInstance> getPhase() {
+            return CHARGING_PLAYER;
+        }
+
+        @Nullable
+        @Override
+        public Vec3 getFlyTargetLocation() {
+            return null; // temp
+        }
+
+    }
+    ```
+
+    When we get to it, this will allow us to define our own behaviour for movement of the dragons.
+    </StepItem>
+
+    <StepItem title="Set the dragon target a random player">
+    To start off with, let's make our dragon target a random alive player, as a first implementation, this will allow us to have a functional, moving dragon.
+
+    First, we add a function that gives us all alive players:
+    ```java
+    private List<? extends Player> getAlivePlayers() {
+        return Bukkit.getOnlinePlayers().stream()
+                .filter(player -> this.dragonsGame.getPlayerState(player).isAlive())
+                .toList();
+    }
+    ```
+
+    Second, we need to add Random to our class (as a static field), this will let us add some random values to our pathfinding.
+    ```java
+    private static final Random random = new Random();
+    ```
+
+    Next, we need to add a couple of utility methods.
+    ```java
+    // choose a random number between two given values
+    private static int rRange(final int min, final int max) {
+        return min + random.nextInt(max - min + 1);
+    }
+
+    // choose a random object from a given list
+    private static <T> T random(final List<T> list) {
+        if (list.isEmpty()) {
+            return null;
+        }
+        return list.get(random.nextInt(list.size()));
+    }
+    ```
+
+    Then, we'll use these static methods to get the dragon to target a player, whenever we call this method (soon!) it'll change the pathfinding to target the player's location at the time we call the method.
+    ```java
+    private void targetPlayer() {
+        final Player player = random(this.getAlivePlayers());
+        this.targetLocation = player.getLocation().clone().add(rRange(-10, 10), rRange(-10, 2), rRange(-10, 10));
+    }
+    ```
+
+    Finally, we'll implement the `serverTick()` method - this is called every tick and we'll hijack this to build targetting decision making.
+
+    ```java
+    @Override
+    public void doServerTick() {
+
+        final Location location = this.dragon.getBukkitEntity().getLocation();
+
+        // if the dragon's location is lower than 25 blocks below spawnpoint
+        if (location.getY() < this.dragonsGame.getSpectatorLocation().getY() - 25) {
+            // then it'll target a random player
+            this.targetPlayer();
+            return;
+        }
+
+        // if the dragons are pushed too far up, teleport them to underneath the map
+        if (location.getY() > this.dragonsGame.getSpectatorLocation().getY() + 40) {
+            this.dragon
+                    .getBukkitEntity()
+                    .teleport(this.dragonsGame.getSpectatorLocation().clone().add(0, -40, 0));
+            return;
+        }
+
+        // if it's a bit too high, target a random player
+        if (location.getY() > this.dragonsGame.getSpectatorLocation().getY() + 10) {
+            this.targetPlayer();
+            return;
+        }
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Send it to the sky">
+    Once the dragon's found it's target, we don't want it to stick to the player and constantly target them, that'd be a bit frustrating. Instead, we want the dragon to re-enter the sky and fly around until it matches another one of our above conditions.
+
+    So, we'll need to add a new `targetSky()` method.
+
+    ```java
+    private void targetSky() {
+        // target a random location within the map area
+        this.targetLocation =
+                this.dragonsGame.getSpectatorLocation().clone().add(rRange(-50, 50), rRange(-15, 20), rRange(-50, 50));
+    }
+    ```
+
+    Before we call it, let's first make sure the dragon reaches it's current target first.
+
+    To do this, we need to create a new static method for finding the distance squared between two locations.
+    ```java
+    private static double offsetSquared(final Location loc1, final Location loc2) {
+        final double dx = loc1.getX() - loc2.getX();
+        final double dy = loc1.getY() - loc2.getY();
+        final double dz = loc1.getZ() - loc2.getZ();
+        return dx * dx + dy * dy + dz * dz;
+    }
+    ```
+
+    Then at the **bottom** of our `doServerTick()` method, we'll add a check to see if it's close enough to it's destination, and if so, we'll make it fly to the random location returned by `targetSky()`
+    ```java
+        // Not near target.
+        if (offsetSquared(location, this.targetLocation) > 6) {
+            return;
+        }
+
+        this.targetSky();
+    ```
+    </StepItem>
+
+    <StepItem title="Making sure it all goes smoothly">
+    Our code now has a couple places where the target location could be null, let's start addressing this by adding a method that handles setting the first target location by overriding `begin()`
+
+    ```java
+    @Override
+    public void begin() {
+        this.targetSky();
+    }
+    ```
+
+    And then, we also want to add something to our constructor to do the same.
+    ```java
+    public CustomPhase(final EnderDragon dragon, final DragonsGame dragonsGame) {
+        super(dragon);
+        this.dragonsGame = dragonsGame;
+        this.targetLocation = dragonsGame.getSpectatorLocation(); // this line!
+    }
+    ```
+    </StepItem>
+
+
+</Step>

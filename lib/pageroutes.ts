@@ -6,6 +6,7 @@ export type Paths =
       href: string;
       noLink?: true;
       heading?: string;
+      deprecated?: boolean;
       items?: Paths[];
     }
   | {

@@ -1,0 +1,200 @@
+---
+title: Start Teleport and Message Listener
+description: Handle player teleportation and broadcasting the start message during the `STARTED` state.
+---
+
+In this tutorial, we'll break down the flow of teleporting players and broadcasting the start message into clear steps.
+
+<Step>
+
+    <StepItem title="Create the StartTeleportMessageListener class">
+    We will begin by creating the `StartTeleportMessageListener` class that will listen for the `STARTED` game state. This listener will handle teleporting players to their designated spawn points and broadcasting a start message.
+
+    Here’s the basic structure of the class:
+
+    ```java
+    public class StartTeleportMessageListener extends AbstractStateBasedListener {
+
+        public StartTeleportMessageListener(final DragonsGame game, final DragonsPlugin plugin) {
+            super(plugin, game, BuiltInGameState.STARTED);
+        }
+
+        @Override
+        public void register() {
+            // Implement logic here later
+        }
+    }
+    ```
+
+    This class extends `AbstractStateBasedListener` to automatically handle game state transitions and ensures that the listener will be triggered when the game enters the `STARTED` state.
+
+    🔗 [StartTeleportMessageListener class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/game/listeners/inprogress/StartTeleportMessageListener.java)
+
+    </StepItem>
+
+    <StepItem title="Set up spawn point retrieval">
+    The next step is to retrieve the spawn points for players. We will create a method that fetches spawn points based on the player's index.
+
+    Add the following method to your class to get the spawn point for each player:
+
+    ```java
+    private Location getSpawnPoint(final int playerIndex) {
+        return this.game.getGameWorld().getDataPoints("SPAWNPOINTS")
+                .get(playerIndex);
+    }
+    ```
+
+    This method retrieves the spawn point for a player using their index. The spawn points are stored in the world’s data points and can be accessed via the key `"SPAWNPOINTS"`.
+
+    - `getGameWorld().getDataPoints("SPAWNPOINTS")`: This retrieves a list of spawn points.
+    - The `playerIndex` is used to map each player to their corresponding spawn point.
+
+    </StepItem>
+
+    <StepItem title="Teleport players to spawn points">
+    Now that we have the spawn points, we can teleport players to their respective locations.
+
+    Update the `register` method to iterate through all online players, set their display names, and teleport them to their spawn points:
+
+    ```java
+    @Override
+    public void register() {
+        int index = 0;
+        for (final Player player : Bukkit.getOnlinePlayers()) {
+            // Set player list and chat name colors to make them stand out
+            player.displayName(player.displayName().color(NamedTextColor.YELLOW));
+            player.playerListName(player.displayName().color(NamedTextColor.YELLOW));
+
+            // Teleport player to their spawn point
+            player.teleport(this.getSpawnPoint(index));
+            index++;
+        }
+    }
+    ```
+
+    - We iterate over each online player and assign them a yellow display name.
+    - We teleport each player to their spawn point using `getSpawnPoint(index)`.
+
+    This ensures that every player is in the correct location before the game starts.
+
+    </StepItem>
+
+    <StepItem title="Create GameMessages constants class">
+    So that we have a central place for all our game messages, let's create a GameMessages constant class:
+    ```java
+    @UtilityClass
+    public class GameMessages {
+
+        public static Component GAME_HEADER_FOOTER = Component.text("=============================================")
+                .color(NamedTextColor.DARK_GREEN)
+                .decorate(TextDecoration.STRIKETHROUGH);
+
+        public static Component GAME_NAME_MESSAGE = Component.translatable(
+                        "mineplex.dragons.module.game.game_name_message",
+                        Component.text("Dragons").decorate(TextDecoration.BOLD).color(NamedTextColor.WHITE))
+                .color(NamedTextColor.GREEN);
+    }
+    ```
+
+    🔗 [GameMessages class source code](https://github.com/BillyDotWS/StudioExample-Dragons/blob/master/src/main/java/com/mineplex/studio/dragons/utils/GameMessages.java)
+    </StepItem>
+
+    <StepItem title="Create start message components">
+    Next, we will create the message components that will be broadcast to all players once the game starts. These messages will include the game description, the game header/footer, and other important details.
+
+    Add the following static field to your class:
+    ```java
+    private static final List<String> GAME_DESCRIPTION = List.of(
+            "mineplex.dragons.module.game.description.1",
+            "mineplex.dragons.module.game.description.2",
+            "mineplex.dragons.module.game.description.3");
+    ```
+
+    Then within the register logic (after the previous step's loop)
+    ```java
+    final List<Component> startComponents = new ArrayList<>();
+    startComponents.add(GameMessages.GAME_HEADER_FOOTER);
+    startComponents.add(GAME_NAME_MESSAGE);
+    startComponents.add(Component.empty());
+    for (final String key : GAME_DESCRIPTION) {
+        startComponents.add(Component.translatable(key));
+    }
+    startComponents.add(Component.empty());
+    startComponents.add(GameMessages.GAME_HEADER_FOOTER);
+    ```
+
+    - We define a list of strings (`GAME_DESCRIPTION`) containing the keys for our localized game description messages.
+    - These components are added to a `startComponents` list, which is later used to broadcast the message.
+
+    Next, we'll have to add these translations to our `Dragons_en.properties` file within our resources directory.
+    ```properties
+    mineplex.dragons.module.game.description.1=You have angered the Dragons!
+    mineplex.dragons.module.game.description.2=Survive as long as you can!
+    mineplex.dragons.module.game.description.3=The Last player alive will win!
+    ```
+
+    </StepItem>
+
+    <StepItem title="Broadcast the game start message">
+    Now that we have our start message components, we will broadcast the message to all players using `Bukkit.broadcast()`.
+
+    Add the following code to broadcast the start message:
+
+    ```java
+    Bukkit.broadcast(Component.join(JoinConfiguration.newlines(), startComponents));
+    ```
+
+    **Explanation:**
+    - `Component.join(JoinConfiguration.newlines(), startComponents)`: This joins the components with new lines between them to format the message nicely.
+    - `Bukkit.broadcast()`: This sends the constructed message to all online players.
+
+    This will ensure that all players are notified about the game’s start with the description and header/footer.
+
+    </StepItem>
+
+    <StepItem title="Unregister the listener">
+    Finally, after broadcasting the start message and teleporting the players, we need to unregister the listener to prevent it from running again.
+
+    Add the following code at the end of the `register` method:
+
+    ```java
+    this.unregister();
+    ```
+
+    **Explanation:**
+    - `this.unregister()`: This ensures the listener is removed after it has executed, which prevents unnecessary processing once the game has started.
+
+    Unregistering the listener ensures that it only runs once, right when the game begins.
+
+    </StepItem>
+
+    <StepItem title="Register the listener in DragonsGame setup">
+    Now, we need to ensure that the `StartTeleportMessageListener` is registered when the game setup occurs.
+
+    In the `setup` method of the `DragonsGame` class, add the following line:
+
+    ```java
+    this.listeners.add(new StartTeleportMessageListener(this, this.dragonsPlugin));
+    ```
+
+    `this.listeners.add(...)`: This adds the `StartTeleportMessageListener` to the list of listeners, ensuring it will be executed during the `STARTED` state.
+    
+    This step ensures that the listener is properly registered and executed when the game enters the `STARTED` state.
+
+    </StepItem>
+
+    <StepItem title="Testing the listener">
+    Finally, let's test the listener. After completing the previous steps, you can test the game by:
+
+    1. Starting the game to trigger the `STARTED` state.
+    2. Observing that all players are teleported to their spawn points.
+    3. Ensuring that player display names and player list names are updated to yellow.
+    4. Verifying that the game start message is broadcasted to all players.
+
+    **Troubleshooting Tips:**
+    - Ensure the spawn points are correctly configured.
+    - Double-check that the listener is properly registered in the `DragonsGame` class setup method.
+
+    </StepItem>
+
+</Step>

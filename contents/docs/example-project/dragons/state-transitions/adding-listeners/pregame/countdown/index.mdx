@@ -1,0 +1,166 @@
+---
+title: Game Start Countdown
+description: Implementing a countdown timer to start the game and transitioning game states when complete.
+---
+
+This tutorial walks you through how to add a countdown timer to start the Dragons game. We’ll ensure proper player notifications and game state management as the countdown progresses.
+
+### Steps to Implement the Countdown
+
+<Step>
+
+    <StepItem title="Adding min and max players">
+    We’ll first enhance the `DragonsGame` class to include limits for the minimum and maximum number of players.
+
+    Add the following functions to manage player count:
+
+    ```java
+    public static int getMinPlayercount() {
+        return 2; // Minimum players required for the game to start
+    }
+
+    public static int getMaxPlayercount() {
+        return 16; // Maximum players allowed in the game
+    }
+    ```
+
+    These will be useful for verifying whether we have enough players to begin the countdown. They also ensure that only the intended number of players can join.
+    </StepItem>
+
+    <StepItem title="Enhance the PlayerJoinPregameListener class">
+    Next, we’ll modify the `PlayerJoinPregameListener` class to handle the countdown logic. This class, which we created in the [adding listeners tutorial](../../adding-listeners), will be responsible for managing the countdown.
+
+    🔗 [PlayerJoinPregameListener class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/game/listeners/prestart/PlayerJoinPregameListener.java)
+
+    First, add a field to store the Bukkit task for the countdown:
+
+    ```java
+    private BukkitTask countdownTask;
+    ```
+
+    This task will be used to track and control the countdown timer.
+    </StepItem>
+
+    <StepItem title="Implement the countdown timer">
+    Define a private method `startTimer` to handle the countdown and manage its state. The timer will check if we have enough players to continue, and if so, it will begin counting down from 60 to 0 seconds. When the timer hits 0, it will trigger the next game phase (`STARTED`).
+
+    The method ensures that the countdown only runs if there are enough players. If the player count falls below the minimum, the timer resets.
+
+    ```java
+    private void startTimer() {
+        this.countdownTask = new BukkitRunnable() {
+
+            int timeRemaining = 60; // Initial countdown time in seconds
+
+            @Override
+            public void run() {
+                if (Bukkit.getOnlinePlayers().size() < DragonsGame.getMinPlayercount()) {
+                    this.timeRemaining = 60; // Reset timer if not enough players
+                    return;
+                }
+
+                // Reduce the remaining time by 1 second
+                this.timeRemaining--;
+
+                // If time is up, trigger the game state change and stop the timer
+                if (this.timeRemaining <= 0) {
+                    PlayerJoinPregameListener.this.game.setGameState(BuiltInGameState.STARTED);
+                    this.cancel(); // Stop the timer
+                    return;
+                }
+
+                // Announce remaining time every 10 seconds or when less than 5 seconds remain
+                if (this.timeRemaining % 10 == 0 || this.timeRemaining <= 5) {
+                    announceTime(this.timeRemaining);
+                }
+            }
+        }.runTaskTimer(this.plugin, 20, 20); // Run every second (20 ticks)
+    }
+    ```
+
+    This method will be used to track and manage the countdown state. It also ensures proper cleanup when the countdown ends.
+    </StepItem>
+
+    <StepItem title="Register and unregister countdown">
+    We need to ensure the countdown starts and stops at the right time. We’ll use the `register()` and `unregister()` methods to handle starting and canceling the countdown.
+
+    Override these methods in the listener class:
+
+    ```java
+    @Override
+    public void register() {
+        super.register();
+        this.startTimer(); // Start the countdown when the game state changes to Pregame
+    }
+
+    @Override
+    public void unregister() {
+        super.unregister();
+        if (this.countdownTask != null) {
+            this.countdownTask.cancel(); // Cancel the countdown when leaving the Pregame state
+            this.countdownTask = null;
+        }
+    }
+    ```
+
+    These methods will be invoked automatically when the game state transitions, ensuring that the countdown starts when it should and is properly cleaned up afterward.
+    </StepItem>
+
+    <StepItem title="Add custom join and leave messages">
+    To enhance the player experience, we’ll show custom messages when players join or leave the game. To keep things organized, we’ll use a `PrefixUtil` class to format these messages consistently.
+
+    Here’s the utility class for the prefix:
+
+    ```java
+    @UtilityClass
+    public class PrefixUtil {
+
+        public static Component getPrefix(final String type) {
+            return Component.translatable("mineplex.dragons.module." + type.toLowerCase() + ".prefix")
+                    .append(Component.text(">"))
+                    .color(NamedTextColor.BLUE);
+        }
+    }
+    ```
+
+    Now, create a file named `i18n/Dragons_en.properties` in your resources directory and add the following entries:
+
+    ```properties
+    mineplex.dragons.module.join.prefix=Join
+    mineplex.dragons.module.quit.prefix=Quit
+    mineplex.dragons.module.game.starting=The game will start in <0> seconds!
+    ```
+
+    This will allow you to customize the messages based on players' locale.
+
+    Now, update the player join and quit event handlers to use these formatted messages:
+
+    ```java
+    quitEvent.quitMessage(Component.join(JoinConfiguration.spaces(), PrefixUtil.getPrefix("Quit"), quitEvent.getPlayer().name().color(NamedTextColor.GRAY)));
+
+    playerJoinEvent.joinMessage(Component.join(JoinConfiguration.spaces(), PrefixUtil.getPrefix("Join"), playerJoinEvent.getPlayer().name().color(NamedTextColor.GRAY)));
+    ```
+
+    This will display stylish messages when players join or leave the game.
+    </StepItem>
+
+    <StepItem title="Announce time remaining">
+    We also need to broadcast the remaining time to all players. Add a method to handle this broadcast:
+
+    ```java
+    private static void announceTime(final int time) {
+        Bukkit.broadcast(Component.join(
+                JoinConfiguration.spaces(),
+                PrefixUtil.getPrefix("Game"),
+                Component.translatable(
+                        "mineplex.dragons.module.game.starting",
+                        Component.text(String.valueOf(time)).color(NamedTextColor.YELLOW))
+                .color(NamedTextColor.GRAY)));
+    }
+    ```
+
+    This method will notify all players of the time remaining in the countdown, using the custom message format we defined earlier.
+    </StepItem>
+
+</Step>
+

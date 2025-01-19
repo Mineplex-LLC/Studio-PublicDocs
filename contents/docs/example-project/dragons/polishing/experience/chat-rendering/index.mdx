@@ -1,0 +1,102 @@
+---
+title: Chat Rendering
+description: Rendering levels and information about the player in chat
+---
+
+![Chat Rendering](/images/chat-formatting.png "Chat Rendering")
+
+### DragonsChatModule
+The `DragonsChatModule` class customizes the chat functionality for the Dragons game. It modifies chat rendering and defines how messages are displayed to players. Here’s how to make it work:
+
+<Step>
+
+    <StepItem title="Class Definition">
+    First, we need to create the class!
+
+    ```java
+    @MineplexModuleImplementation(DragonsChatModule.class)
+    public class DragonsChatModule implements MineplexModule {
+        @Override
+        public void setup() {
+            // Chat setup logic goes here
+        }
+
+        @Override
+        public void teardown() {
+            // Cleanup logic goes here
+        }
+    }
+    ```
+
+    🔗 [DragonsChatModule class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/modules/DragonsChatModule.java)
+
+    The `@MineplexModuleImplementation` annotation signifies which module we intend to set the behaviour of, in our case: `DragonsChatModule`
+    </StepItem>
+
+    <StepItem title="Register the module">
+    In our main `DragonsPlugin` class, we'll register our module.
+
+    Within the `setup()` method, we'll add
+    ```java
+    MineplexModuleManager.getInstance().registerModule(new DragonsChatModule());
+    ```
+    </StepItem>
+
+    <StepItem title="Add our setup logic">
+    Within our module, we'll be needing to fetch a couple of other modules to enable us to format the chat.
+
+    Retrieve Modules:
+    - Fetch the `MineplexGameModule` and `ChatModule` using `MineplexModuleManager#getRegisteredModule()`.
+
+    Audience Configuration:
+    - Configure the global chat channel (BuiltInChatChannel.GLOBAL) to broadcast messages to all online players.
+
+    ```java
+    final MineplexGameModule gameModule = MineplexModuleManager.getRegisteredModule(MineplexGameModule.class);
+    final ChatModule chatModule = MineplexModuleManager.getRegisteredModule(ChatModule.class);
+    chatModule.setAudienceFunction(BuiltInChatChannel.GLOBAL, sender -> Set.copyOf(Bukkit.getOnlinePlayers()));
+    ```
+    </StepItem>
+
+    <StepItem title="Add the custom renderer">
+    Custom Chat Renderer:
+    - Define how chat messages are formatted and displayed to viewers.
+    - Create a `List<Component>` to build the chat message from multiple parts.
+
+    [View further documentation on Chat rendering](../../../docs/sdk/features/chat#chat-channels-1)
+
+    ```java
+    chatModule.setChatRenderer(BuiltInChatChannel.GLOBAL, (source, sourceDisplayName, message, viewer) -> {
+        final List<Component> components = new ArrayList<>();
+
+        // Add a dead player prefix if the player is not alive
+        if (!gameModule
+                .getCurrentGame()
+                .orElseThrow(() -> new RuntimeException("No game present!"))
+                .getPlayerState(source)
+                .isAlive()) {
+            final Component deadPrefix = Component.translatable("mineplex.dragons.chat.ghost_prefix");
+            components.add(deadPrefix);
+        }
+
+        // Retrieve and display the player's level and associated color
+        final MineplexPlayerExperience levelInfoObject = MineplexModuleManager.getRegisteredModule(MineplexLevelModule.class)
+                .getOnlinePlayerExperience(source)
+                .orElse(MineplexPlayerExperience.builder()
+                        .playerId(source.getUniqueId())
+                        .build());
+
+        final Component levelPrefix = Component.text(levelInfoObject.getLevel()).color(levelInfoObject.getLevelColor());
+        components.add(levelPrefix);
+
+        // Add the player's display name and chat message
+        components.add(sourceDisplayName);
+        components.add(message.color(NamedTextColor.WHITE));
+
+        // Combine all components into a single chat message
+        return Component.join(JoinConfiguration.spaces(), components);
+    });
+    ```
+    </StepItem>
+
+</Step>

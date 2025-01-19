@@ -1,0 +1,325 @@
+---
+title: Coward Kit
+description: Implementing a new kit for gameplay!
+---
+
+The **Coward** kit is designed for players who prefer to avoid confrontation by leaping away from danger. With full leather armor and an iron axe that allows them to leap with a right-click, players using this kit can quickly escape from dragons or other threats. Additionally, the kit removes knockback upon landing, giving players an advantage in maintaining control after their leap.
+
+### Creating the kit
+
+<Step>
+
+    <StepItem title="Create the kit class">
+    We start by creating a class to house our Coward kit. We'll implement the `Kit<DragonsGame>` interface provided by the Mineplex SDK. This interface allows us to define essential mechanics for the kit.
+
+    🔗 [View the kit documentation](https://docs.mineplex.com/docs/sdk/features/game/mechanics/kit)
+
+    🔗 [CowardKit class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/kits/CowardKit.java).
+
+    Here's the basic structure of the `CowardKit` class:
+    ```java
+    public class CowardKit implements Kit<DragonsGame> {
+
+        @Override
+        public @NonNull String getName() { return "Coward"; } // The name of our kit
+
+        @Override
+        public void setup(@NonNull DragonsGame game) { } // Setup logic for the kit
+
+        @Override
+        public void teardown() { } // Logic for when the kit is removed or the game ends
+
+        @Override
+        public void giveKit(@NonNull LivingEntity livingEntity) { } // Logic to give the kit to a player
+
+        @Override
+        public void removeKit(@NonNull LivingEntity livingEntity) { } // Logic to remove the kit from a player
+
+    }
+    ```
+
+    <Note type="danger">
+    You'll see your IDE complaining about missing methods, hold on for a moment, we're coming to it!
+    </Note>
+    </StepItem>
+
+    <StepItem title="Implementing core methods">
+    The next step is to implement some essential methods for the `CowardKit`.
+
+    **Adding Lombok Annotations**
+    We'll use Lombok annotations to simplify the code:
+    - `@Getter` to automatically generate getters for our fields (this will automatically override, satisfying your IDE's shouting).
+    - `@RequiredArgsConstructor` to generate a constructor that initializes final fields.
+
+    This allows for cleaner and more efficient code.
+
+    ```java
+    @RequiredArgsConstructor
+    @Getter
+    public class CowardKit implements Kit<DragonsGame> {
+    ```
+
+    **Adding Kit Mechanics**
+    We need to define the mechanics that drive this kit. These mechanics will help distribute and manage kits, as well as manage the abilities associated with the kit:
+    ```java
+    // Used to distribute and manage kits
+    private final KitMechanic kitMechanic;
+
+    // Used to manage abilities
+    private final AbilityMechanic abilityMechanic;
+
+    private final DragonsGame game; // The game instance to tie this kit to
+    ```
+
+    These fields will be initialized through the constructor, thanks to `@RequiredArgsConstructor`.
+    </StepItem>
+
+    <StepItem title="Register the coward kit in the game">
+    We need to register it in the `DragonsGame` class. This will make sure that the kit is available to our kit mechanic.
+
+    In your `DragonsGame` class, add the Coward Kit to the kit registry within the `setup()` method
+    ```java
+    this.kitMechanic.registerKit(this, CowardKit.class, new CowardKit(this.kitMechanic, this.abilityMechanic, this));
+    ```
+    </StepItem>
+
+</Step>
+
+### Adding the leap ability
+
+The **Coward Kit** includes a unique ability: **LeapAbility**. This allows players to leap away from danger by right-clicking with their iron axe. 
+
+<Note type="success">
+We're skipping over adding translations in our future steps, we've done this a few times already, so this should be simple!
+
+🔗 [Complete translations file](https://github.com/BillyDotWS/StudioExample-Dragons/blob/master/src/main/resources/i18n/Dragons_en.properties)
+</Note>
+
+.
+
+<Step>
+    <StepItem title="Add LeapAbility class">
+    Begin by creating the `LeapAbility` class:
+    ```java
+    public class LeapAbility implements ActiveAbility<DragonsGame> {
+        @Override
+        public void activate(@NonNull LivingEntity livingEntity) {}
+
+        @Override
+        public void deactivate(@NonNull LivingEntity livingEntity) {}
+
+        @Override
+        public @NonNull AbilityMechanic getAbilityMechanic() {
+            return null;
+        }
+
+        @Override
+        public @NonNull DragonsGame getGame() { return null; }
+
+        @Override
+        public @NonNull String getName() { return ""; }
+
+        @Override
+        public void setup(@NonNull DragonsGame game) {}
+
+        @Override
+        public void teardown() {}
+
+        @Override
+        public void start(@NonNull LivingEntity livingEntity) {}
+
+        @Override
+        public void stop(@NonNull LivingEntity livingEntity) {}
+    }
+    ```
+
+    🔗 [LeapAbility class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/kits/ability/LeapAbility.java)
+    </StepItem>
+
+    <StepItem title="Enhance LeapAbility class">
+    Add necessary imports, fields, and annotations to define the full functionality of the LeapAbility. Update your class like this:
+    ```java
+    @Slf4j
+    @Getter
+    @AllArgsConstructor
+    public class LeapAbility implements ActiveAbility<DragonsGame>, Listener {
+
+        private final AbilityMechanic abilityMechanic;
+        private final DragonsGame game;
+
+        private static final ItemStack ITEM_STACK;
+        private static final long COOLDOWN_DURATION = 7000; // 7 seconds in milliseconds
+        private static final long LEAP_PROTECTION_DURATION = 5000; // 5 seconds for fall damage protection
+
+        private final Set<LivingEntity> abilityUsers = new HashSet<>();
+        private final Map<UUID, Long> cooldowns = new HashMap<>();
+        private final Set<UUID> protectedFromFall = new HashSet<>();
+
+        static {
+            ITEM_STACK = new ItemStack(Material.IRON_AXE);
+            ITEM_STACK.editMeta(meta -> meta.displayName(Component.translatable("mineplex.dragons.module.game.kit.coward.axe_name")
+                    .color(NamedTextColor.GREEN)));
+        }
+    }
+    ```
+    - **Annotations**: `@Slf4j`, `@Getter`, and `@AllArgsConstructor` simplify the class by handling logging, getters, and constructor generation.
+    - **Fields**: Define reusable constants and collections for cooldowns and fall damage protection.
+    - **Static Block**: Prepares the special iron axe with a custom name and appearance.
+
+    </StepItem>
+
+    <StepItem title="Handle player interactions">
+    Add the logic for when players right-click with the iron axe to trigger the leap ability:
+    ```java
+    @EventHandler
+    public void handleClick(final PlayerInteractEvent event) {
+        // Check if the player is right-clicking in the air or on a block
+        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            // Get the item the player is holding in their main hand
+            final ItemStack heldItem = event.getPlayer().getInventory().getItemInMainHand();
+            // Check if the held item matches the predefined special ITEM_STACK
+            if (heldItem.isSimilar(ITEM_STACK)) {
+                // Get the player's unique identifier and the current time
+                final UUID playerId = event.getPlayer().getUniqueId();
+                final long currentTime = System.currentTimeMillis();
+
+                // Check if the player is on cooldown
+                if (this.cooldowns.containsKey(playerId)
+                        && currentTime - this.cooldowns.get(playerId) < COOLDOWN_DURATION) {
+                    // Calculate the remaining cooldown time in seconds
+                    final long timeLeft = (COOLDOWN_DURATION - (currentTime - this.cooldowns.get(playerId))) / 1000;
+                    // Send a message to the player indicating how much cooldown time is left
+                    event.getPlayer()
+                            .sendMessage(Component.join(
+                                    JoinConfiguration.spaces(),
+                                    PrefixUtil.getPrefix("Game"), // Prefix for the message
+                                    Component.translatable(
+                                                    "mineplex.dragons.module.game.kit.cooldown-message", // Translatable key
+                                                    Component.text(timeLeft).color(NamedTextColor.YELLOW)) // Cooldown time in yellow
+                                            .color(NamedTextColor.RED))); // Main message color
+                    return; // Exit the method to prevent further actions
+                }
+
+                // Calculate the velocity vector for the leap
+                final Vector leapVelocity = getVector(event);
+
+                // Set the player's velocity to perform the leap
+                event.getPlayer().setVelocity(leapVelocity);
+                // Play the sound of an Ender Dragon flapping its wings at the player's location
+                event.getPlayer()
+                        .getWorld()
+                        .playSound(event.getPlayer().getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 1.0f, 1.0f);
+
+                // Record the time the player used the leap in the cooldown map
+                this.cooldowns.put(playerId, currentTime);
+
+                // Add the player to the fall protection list to prevent fall damage
+                this.protectedFromFall.add(playerId);
+
+                // Schedule a task to remove the player from the fall protection list after the protection duration
+                this.game
+                        .getDragonsPlugin() // Get the plugin instance
+                        .getServer()
+                        .getScheduler()
+                        .runTaskLater(
+                                this.game.getDragonsPlugin(), // Plugin reference for scheduling
+                                () -> this.protectedFromFall.remove(playerId), // Remove player from protection list
+                                LEAP_PROTECTION_DURATION / 50); // Convert duration from milliseconds to ticks
+            }
+        }
+    }
+    ```
+    - **Cooldown Handling**: Ensures players can't spam the ability.
+    - **Velocity Calculation**: Uses `getVector` to determine the leap direction and strength.
+    - **Fall Protection**: Temporarily prevents fall damage after leaping.
+
+    </StepItem>
+
+    <StepItem title="Prevent fall damage">
+    Add an event handler to cancel fall damage for players who have recently leapt:
+    ```java
+    @EventHandler
+    public void handleFallDamage(final EntityDamageEvent event) {
+        if (event.getEntity() instanceof final Player player
+                && event.getCause() == EntityDamageEvent.DamageCause.FALL) {
+            if (this.protectedFromFall.remove(player.getUniqueId())) {
+                event.setCancelled(true);
+            }
+        }
+    }
+    ```
+    - Checks if the player is on the fall protection list.
+    - Cancels fall damage if they are.
+
+    </StepItem>
+
+    <StepItem title="Start and stop logic">
+    Ensure that when a player starts or stops using the ability, the correct items are applied or cleared:
+    ```java
+    @Override
+    public void start(@NonNull final LivingEntity livingEntity) {
+        final EntityEquipment equipment = livingEntity.getEquipment();
+        if (equipment != null) {
+            equipment.setItemInMainHand(ITEM_STACK.clone());
+        }
+    }
+
+    @Override
+    public void stop(@NonNull final LivingEntity livingEntity) {
+        final EntityEquipment equipment = livingEntity.getEquipment();
+        if (equipment != null) {
+            equipment.clear();
+        }
+    }
+    ```
+    - Ensures the player always has the correct gear when the ability is active.
+    </StepItem>
+
+</Step>
+
+### Register the ability within the kit
+
+Now we've created our ability, it's back to our `CowardKit` class!
+
+<Step>
+
+    <StepItem title="Add the ability to the kit">
+    We need to register the ability as part of the kit! And clean it up properly once the game ends!
+    ```java
+    @Override
+    public void setup(@NonNull final DragonsGame game) {
+        this.abilityMechanic.registerAbility(game, LeapAbility.class, new LeapAbility(this.abilityMechanic, game));
+    }
+
+    @Override
+    public void teardown() {
+        this.abilityMechanic.destroyAbility(LeapAbility.class);
+    }
+    ```
+    </StepItem>
+
+    <StepItem title="Give and remove the items from the player">
+    Within the `CowardKit` class: this kit has an armor set, so we'll need to add and remove items from the player when it's activated and deactivated.
+
+    ```java
+    @Override
+    public void giveKit(@NonNull final LivingEntity livingEntity) {
+        // Apply gear
+        final EntityEquipment equipment = livingEntity.getEquipment();
+        if (equipment != null) {
+            equipment.setHelmet(ItemStack.of(Material.LEATHER_HELMET));
+            equipment.setChestplate(ItemStack.of(Material.LEATHER_CHESTPLATE));
+            equipment.setLeggings(ItemStack.of(Material.LEATHER_LEGGINGS));
+            equipment.setBoots(ItemStack.of(Material.LEATHER_BOOTS));
+        }
+        this.abilityMechanic.grantAbility(livingEntity, LeapAbility.class);
+    }
+
+    @Override
+    public void removeKit(@NonNull final LivingEntity livingEntity) {
+        this.abilityMechanic.removeAbility(livingEntity, LeapAbility.class);
+    }
+    ```
+    </StepItem>
+
+</Step>
