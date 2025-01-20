@@ -15,14 +15,17 @@ export const Documents = [
                 href: "/example-project",
             },
             {
-                title: "Game Configuration",
-                href: "/game-config",
-            },
-            {
                 title: "Project Namespaces",
-                href: "/namespaces"
-            }
-        ]
+                href: "/namespaces",
+            },
+        ],
+    },
+    {
+        spacer: true,
+    },
+    {
+        title: "Project Configuration",
+        href: "/configuration",
     },
     {
         spacer: true,
@@ -33,19 +36,19 @@ export const Documents = [
         items: [
             {
                 title: "Data Privacy",
-                href: "/data-privacy"
+                href: "/data-privacy",
             },
             {
-                title: "Game Publishing",
-                href: "/publishing"
+                title: "Project Publishing",
+                href: "/publishing",
             },
             {
                 title: "Moderation Information",
-                href: "/moderation"
+                href: "/moderation",
             },
             {
                 title: "Security Guidelines",
-                href: "/security-guidelines"
+                href: "/security-guidelines",
             },
             {
                 title: "Frequently Asked Questions",
@@ -54,8 +57,8 @@ export const Documents = [
             {
                 title: "Review Process",
                 href: "/review-process",
-            }
-        ]
+            },
+        ],
     },
     {
         spacer: true,
@@ -72,7 +75,7 @@ export const Documents = [
                 title: "Commands",
                 href: "/commands",
             },
-        ]
+        ],
     },
     {
         spacer: true,
@@ -83,11 +86,11 @@ export const Documents = [
         items: [
             {
                 title: "Installation",
-                href: "/installation"
+                href: "/installation",
             },
             {
                 title: "Features",
-                href: "/modules",
+                href: "/features",
                 items: [
                     {
                         title: "Chat Module",
@@ -96,10 +99,6 @@ export const Documents = [
                     {
                         title: "Command Module",
                         href: "/command",
-                    },
-                    {
-                        title: "Player Ignore Module",
-                        href: "/player-ignore",
                     },
                     {
                         title: "Data Storage Module",
@@ -114,8 +113,12 @@ export const Documents = [
                         href: "/leaderboard",
                     },
                     {
-                        title: "Queue Module",
-                        href: "/queueing",
+                        title: "Level Module",
+                        href: "/levels",
+                    },
+                    {
+                        title: "Lobby Module",
+                        href: "/lobby",
                     },
                     {
                         title: "Messaging Module",
@@ -141,15 +144,27 @@ export const Documents = [
                                 title: "Punishment Command",
                                 href: "/command",
                             },
-                        ]
+                        ],
                     },
                     {
                         title: "Party Module",
                         href: "/party",
                     },
                     {
+                        title: "Player Ignore Module",
+                        href: "/player-ignore",
+                    },
+                    {
                         title: "Purchase Module",
                         href: "/purchase",
+                    },
+                    {
+                        title: "Quest Module",
+                        href: "/quest"
+                    },
+                    {
+                        title: "Queue Module",
+                        href: "/queueing",
                     },
                     {
                         title: "Resource Pack Module",
@@ -167,9 +182,9 @@ export const Documents = [
                                 title: "World Datapoints",
                                 href: "/datapoints",
                             },
-                        ]
-                    }
-                ]
+                        ],
+                    },
+                ],
             },
             {
                 title: "Built-In Game Mechanics",
@@ -182,8 +197,8 @@ export const Documents = [
                     {
                         title: "Kit Mechanic",
                         href: "/kit",
-                    }
-                ]
+                    },
+                ],
             },
             {
                 title: "Custom Modules",
@@ -200,7 +215,7 @@ export const Documents = [
             {
                 title: "Third Party Resources",
                 href: "/thirdparty",
-            }
-        ]
+            },
+        ],
     },
 ];
