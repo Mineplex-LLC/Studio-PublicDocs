@@ -24,6 +24,9 @@ Add your quest definitions into your configuration folder, under the quests subf
 Quest definitions should be formatted as follows:
 
 ```yaml
+# A unique key for the quest within your namespace (also referred to as the quest key)
+questId: "first-adventure"
+
 # A name displayed to players when picking up the quest
 displayName: "First Adventure"
 
@@ -73,7 +76,7 @@ We call an instance of a picked-up quest a "Quest Ticket", as they're trying to 
     // get the quest module from the module manager
     final QuestModule questModule = MineplexModuleManager.getRegisteredModule(QuestModule.class);
 
-    // award the quest using the quest's file name (removing the file type suffix) as a quest key.
+    // award the quest using the quest's ID (or key)
     // you can use addProgressIfAssigned(player, "first-adventure", 2) to award more than 1.
     questModule.addProgressIfAssigned(player, "first-adventure");
     ```
