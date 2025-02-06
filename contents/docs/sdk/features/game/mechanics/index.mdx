@@ -1,6 +1,6 @@
 ---
 title: Built-In Game Mechanics
-description: How to use the built-in Mineplex Studio Game MEchanics.
+description: How to use the built-in Mineplex Studio Game Mechanics.
 ---
 
 The Studio SDK comes with extensive built-in Game Mechanics that provide foundational functionality for all Studio
@@ -37,3 +37,8 @@ public class ExampleGame implements MineplexGame {
     }
 }
 ```
+
+<Note type="warning">
+    Constructing a `GameMechanic` through `MineplexGameMechanicFactory` will not cause Studio Engine to call neither of its `setup()` nor `teardown()` methods.
+    You might call both `setup()` and `teardown()` on your own as needed.
+</Note>
