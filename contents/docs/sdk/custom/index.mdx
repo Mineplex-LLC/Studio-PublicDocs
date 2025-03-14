@@ -53,3 +53,8 @@ Creating your own custom `MineplexModule`s is almost effortless! Simply create a
      }
  }
  ```
+
+<Note type="note">
+    Registering a module using `MineplexModuleManager` will call its `setup()` method and register it as a Bukkit event listener.
+    Similarly, destroying a module using `destroyModule` method of `MineplexModuleManager` will call its `teardown()` method, also unregistering events.
+</Note>
