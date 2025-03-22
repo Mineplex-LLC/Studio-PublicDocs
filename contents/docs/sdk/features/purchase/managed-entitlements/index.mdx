@@ -1,0 +1,63 @@
+---
+title: Managed Entitlements
+description: How to use pre-built unlockable rewards (known as "Managed Entitlements")
+---
+
+Typically, product and subscription offerings within a Studio project require custom logic to grant some entitlement to the user after they are unlocked.
+
+For example, if a player purchases a custom cosmetic in a game, the game code needs to listen for the purchase event and grant the user the appropriate access after their transaction is confirmed.
+
+Managed Entitlements are special types of products or subscriptions that instead rely on Mineplex to grant access to some entitlement after a purchase is confirmed. This means that you do not need to write any custom code to grant the entitlements to the player after a purchase is made, and you instead configure the Managed Entitlement from the product or subscription definition YAML file.
+
+<Note type="note">
+- By default, Managed Entitlements still emit purchase callback events and must be acknowledged by the game server (even if the handler is a no-op)
+</Note>
+
+## High Level Technical Flow
+For a managed entitlement purchase, the high-level technical flow is as follows:
+<Step>
+  <StepItem title="Player Prompts Purchase">
+    A player takes an in-game action that triggers the `promptPurchase` method in the Mineplex Purchases SDK module
+  </StepItem>
+  <StepItem title="Crowns Debited">
+    The Mineplex payments service attempts to debit the player Crown balance
+  </StepItem>
+  <StepItem title="Managed Entitlement Grant">
+    The Mineplex payments service automatically grants the player the entitlement associated with the purchase
+  </StepItem>
+  <StepItem title="Event Received">
+    An event is sent back to your game code based on the `callbackDelivery` mode defined in the purchaseable defintion file (see below). You don't need to handle this event if your unlockable content is exclusively a Managed Entitlement, but you must still
+    acknowledge the event to prevent it from being automatically refunded.
+  </StepItem>
+</Step>
+
+## Creating a Managed Entitlement
+Right now, the only supported Managed Entitlement type is for priority queuing of players. This means that you can create a product or subscription that, when purchased, grants the player priority access to a game server's queue.
+
+If the player refunds the purchase or cancels the subscription, the priority access is automatically revoked by the Managed Entitlements system.
+
+### Queue Priority Managed Entitlement
+To declare a Managed Entitlement for queue priority within a product or subscription, add the following YAML to the definition file:
+```yaml
+managedEntitlements:
+  queuePriority: <number>
+```
+
+The `queuePriority` field should be a number that represents the priority level of the player. The higher the number, the higher the priority level and the faster they will receive a match when joining a congested game server.
+
+For more information on how queue prioritization works, see the [Queue Prioritization](/docs/sdk/features/queueing/queue-prioritization) documentation.
+
+A full example of a product definition file with a Managed Entitlement for queue priority is as follows:
+```yaml
+productId: "priority-queue-10"
+productName: "Queue Priority 10"
+productDescription: "This allows you to skip the queue and join the game server faster!"
+price: 100
+callbackDelivery: "ALLOW_OFFLINE_DELIVERY"
+repeatablePurchase: false
+
+managedEntitlements:
+  queuePriority: 10
+```
+
+In this case, players who purchase the "Power Up" product will receive a queue priority of `10` when joining a game server for the project specified in the `game-properties.yaml` file.

@@ -1,0 +1,23 @@
+---
+title: Queue Prioritization
+description: Everything you need to know about queue prioritization or "priority queueing" in the Mineplex Studio
+---
+
+By default, when a player joins a game server that is at capacity, they are placed in a queue to wait for a spot to open up. The player at the front of the queue is the next player to join the game server when a spot becomes available.
+
+<Note type="note">
+- Because the Mineplex Studio queuing service is a large distributed system, the queue position and size metrics that are exposed to players are not necessarily deterministic, and may have slight inaccuracies due to eventual consistency
+</Note>
+
+## Default Priority Calculation
+By default, every player has a queue priority of `1.0`. Parties are assigned the average priority of all their members, with a slight bonus of up to `1.0` total points based on the size of the party.
+
+As a player waits in the queue, they accumulate an additional `1.0` priority every minute. This means that the longer a player waits in the queue, the higher their priority becomes. Priorities can never be negative and are capped at `100.0`. 
+
+## Custom Priorities ("Priority Queueing")
+The base priority of a given player can be customized. This is useful for creating special products or subscriptions that grant players priority access to a game server's queue. It is possible to set a player's priority value for a given project from either the Matchmaker API or via the Purchases SDK through a [Managed Entitlement](/docs/sdk/features/purchase/managed-entitlements).
+
+When picking priority values for custom products or subscriptions, we recommend considering the following:
+- Each point beyond `1.0` represents roughly a minute of queue time that the player will "skip" in position when joining a game server
+- The maximum priority value is `100.0`, which represents a player who has waited in the queue for 100 minutes
+- Note that players with a custom priority still accrue the default `1.0` priority per minute while waiting in the queue
