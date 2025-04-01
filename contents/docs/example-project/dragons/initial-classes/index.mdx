@@ -3,12 +3,12 @@ title: Step-by-Step Explanation of Initial Classes
 description: Plain English guide to setting up and understanding the DragonsPlugin and DragonsGame classes
 ---
 
-Follow along with us by checking out the 🔗 [source code](https://github.com/BillyDotWS/studioexample-dragons)
+Follow along with us by checking out the 🔗 [source code](https://github.com/Mineplex-LLC/StudioExample-Dragons)
 
 ### DragonsPlugin
 The `DragonsPlugin` class is the main entry point for the plugin. It sets up key modules and configurations for the "Dragons" game on the Mineplex platform. Below is a step-by-step breakdown of what each part does and how to set it up:
 
-🔗 [DragonsPlugin class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/DragonsPlugin.java)
+🔗 [DragonsPlugin class source code](https://github.com/Mineplex-LLC/StudioExample-Dragons/blob/master/src/main/java/com/mineplex/studio/dragons/DragonsPlugin.java)
 
 <Step>
 
@@ -63,7 +63,7 @@ The `DragonsPlugin` class is the main entry point for the plugin. It sets up key
         - Fetch the `MineplexWorldModule`.
         - Load a world template (stored in `world-templates/lobby.zip`).
 
-        🔗 [You can find our Lobby world in the example project](https://github.com/BillyDotWS/StudioExample-Dragons/tree/master/assets/world-templates)
+        🔗 [You can find our Lobby world in the example project](https://github.com/Mineplex-LLC/StudioExample-Dragons/tree/master/assets/world-templates)
 
         🔗 [View more information about world loading](../../docs/sdk/features/world)
 
@@ -84,6 +84,7 @@ The `DragonsPlugin` class is the main entry point for the plugin. It sets up key
     <StepItem title="Set up the Lobby module">
         First, we'll need to add a new field to our class:
         ```java
+        @Getter
         private LobbyModule lobbyModule;
         ```
 
@@ -143,7 +144,7 @@ The `DragonsPlugin` class is the main entry point for the plugin. It sets up key
 
 The `DragonsGame` class represents a single instance of the "Dragons" game. It handles game-specific logic and player states. Here is how it works:
 
-🔗 [DragonsPlugin class source code](https://github.com/BillyDotWS/studioexample-dragons/blob/master/src/main/java/com/mineplex/studio/dragons/game/DragonsGame.java)
+🔗 [DragonsPlugin class source code](https://github.com/Mineplex-LLC/StudioExample-Dragons/blob/master/src/main/java/com/mineplex/studio/dragons/game/DragonsGame.java)
 
 <Step>
     <StepItem title="Fields and Dependencies">
