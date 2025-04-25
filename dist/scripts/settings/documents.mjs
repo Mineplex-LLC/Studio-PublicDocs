@@ -157,6 +157,12 @@ export const Documents = [
                     {
                         title: "Purchase Module",
                         href: "/purchase",
+                        items: [
+                            {
+                                title: "Managed Entitlements",
+                                href: "/managed-entitlements",
+                            }
+                        ]
                     },
                     {
                         title: "Quest Module",
@@ -165,6 +171,12 @@ export const Documents = [
                     {
                         title: "Queue Module",
                         href: "/queueing",
+                        items: [
+                            {
+                                title: "Queue Priority",
+                                href: "/queue-prioritization"
+                            }
+                        ]
                     },
                     {
                         title: "Resource Pack Module",

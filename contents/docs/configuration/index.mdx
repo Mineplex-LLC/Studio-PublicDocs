@@ -57,6 +57,8 @@ matchmaker:
   maxPlayers: 16
   # Determines if players should be allowed to join an instance of your game that is already running
   allowPlayerBackfill: false
+  # Determines if players should be allowed to bypass the max player count to join as spectators
+  allowSpectatorMode: false
 
 # any mineplex provided dependencies you'd like to add - requires Organization account
 dependencies:
@@ -71,16 +73,30 @@ dependencies:
 ```
 
 ## Matchmaking and Game Allocation
-### STATIC mode:
+
+### Allocation Modes
+#### STATIC allocation
 - Your game will be allocated as a set of stateful containers. You can specify an additional property for the maximum number of containers (maxInstanceCount) and we will automatically provision additional servers based on the actual player load over time, up to that maximum count.
-- In a static mode, players can queue for a specific instance of your game. For example, Clans-1, Clans-2, and so on. 
+- In a static mode, players can queue for a specific instance of your game. For example, `Clans-1`, `Clans-2`, and so on. 
 Your code should not make any assumptions about the actual number of servers at any given time. If there are no players on Clans-2, we may deallocate that instance until someone re-queues for Clans-2, at which point the server will be re-allocated (with its state restored). 
 - We reserve the right to restart containers as needed, but will fire off an event to your game before doing so. For example, if we need to restart Clans-2 to apply a code update that you published, our orchestration server will give your game a grace period to shut down before it is automatically restarted. This will be very similar to a SIGTERM and SIGKILL lifecycle in a process -- the game gets a warning first, giving it a chance to gracefully handle a shutdown, and then it is forcefully shut down at some point in the future. Our systems will make a best-effort attempt to avoid restarting instances with active players, and we will work on exposing the grace period as a parameter to you. We are still figuring out the best way to handle this case, but want for you to plan in advance for it.
 
-### DYNAMIC mode:
+#### DYNAMIC allocation
 - Your game will be allocated on-demand in response to matchmaking and queuing events. For example, if your game requires four players to begin, and eight players enter the queue, two instances of the game will be created automatically by our matchmaking and orchestration systems behind the scenes. These players are also transferred automatically once your game enters a healthy state as per our SDK lifecycle management.
 - In a dynamic mode, players queue for your game mode itself, and are allocated to game instances as they become available. For example, players may queue for SSM and end up being assigned to any number of different servers, as per our orchestration logic.
 - Your game must interact with our lifecycle SDK to indicate when it is safe or unsafe to shut down the game. This is usually between minigame iterations. Our systems make a best-effort attempt to keep the container alive, and may add more players during this time (it's like a game lobby window). However, in some cases (such as if insufficient players are in the game mode), the container may be shut down. Once again, we will deliver a shutdown event and a grace period in case you want to re-queue players for another mode or lobby before the container is killed. Otherwise, players are sent back to the Mineplex hub.
+
+### Backfill
+Backfill allows queued players to join instances of your game that are already running (specifically, those that are in the `IN_GAME` state). For example, if there is an instance of your game that is currently in the `IN_GAME` state with two players, and there are four remaining slots, then the next four players to queue for the game mode will be backfilled into the existing game instance.
+
+Backfill can be enabled and disabled via the `allowPlayerBackfill` property in the `game-properties.yaml` file.
+
+### Spectator Mode
+Spectator mode allows players to join instances of your game that are already running, even if those games are full. Spectators can join a game even if it does not enable backfill and is in the `IN_GAME` state. Unlike backfill players, spectators are not automatically allocated whenever players queue for the game -- they must specifically request to join as spectators via a special command.
+
+Spectator mode can be enabled and disabled via the `allowSpectatorMode` property in the `game-properties.yaml` file. When this property is not specified, it defaults to `false`. 
+
+When spectator mode is enabled, your game must safely handle cases when the number of players on the server exceeds the maximum player count specified in the matchmaking configuration. For example, you can kick or re-queue excess players at the end of a game cycle if your game cannot accommodate them in the next round.
 
 ## Dependencies
 <Note type="note">
