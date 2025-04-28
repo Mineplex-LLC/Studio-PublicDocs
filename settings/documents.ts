@@ -109,6 +109,26 @@ export const Documents: Paths[] = [
           {
             title: "Game Engine Module",
             href: "/game",
+            items: [
+              {
+                title: "Game Mechanics",
+                href: "/mechanics",
+                items: [
+                  {
+                    title: "Ability Mechanic",
+                    href: "/ability",
+                  },
+                  {
+                    title: "Kit Mechanic",
+                    href: "/kit",
+                  },
+                  {
+                    title: "World Selector Mechanic",
+                    href: "/world-selector",
+                  },
+                ],
+              },
+            ]
           },
           {
             title: "Leaderboard Module",
@@ -197,20 +217,6 @@ export const Documents: Paths[] = [
                 href: "/datapoints",
               },
             ],
-          },
-        ],
-      },
-      {
-        title: "Built-In Game Mechanics",
-        href: "/features/game/mechanics",
-        items: [
-          {
-            title: "Ability Mechanic",
-            href: "/ability",
-          },
-          {
-            title: "Kit Mechanic",
-            href: "/kit",
           },
         ],
       },
