@@ -25,6 +25,12 @@ rewardGame(@NonNull MineplexExperienceSession levelSession)
 ### In-built Example
 We have an in-built `MineplexExperienceSessionImpl` which implements the `MineplexExperienceSession` to provide session functionality. 
 
+<Note type="warning">
+You need to construct this premade implementation of the session at the START of each game (when your game starts & becomes playable), as we take into account the time you start the session for determining the amount of experience to give to players. 
+
+Do not start the session at the end of your game, or before players join, as this will give an innacurate amount of experience. 
+</Note>
+
 <Step>
     <StepItem title="Construct the session">
     ```java
