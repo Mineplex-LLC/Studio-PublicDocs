@@ -1,19 +1,136 @@
 ---
-title: Built-In Game Mechanics
-description: How to use the built-in Mineplex Studio Game MEchanics.
+title: Game Mechanics
+description: How to use Mineplex Studio Game Mechanics.
 ---
 
+<JavadocLink classpath="com.mineplex.studio.sdk.modules.game.mechanics.GameMechanic"/>
+
+`GameMechanic`s are discrete elements of gameplay that create a full game when all operating together. These mechanics
+can be tightly coupled to a specific `MineplexGame`, or left generic to support a wide variety of games. We provide
+several built-in `GameMechanic`s with the Studio SDK, but you can also make your own mechanics to customize your game
+projects. You can even create unique `GameMechanic`s and sell them to other developers on our asset
+marketplace! `GameMechanic`s should register and unregister themselves as `Listener`s in their setup and teardown
+methods, **which should be called manually** when an owning `MineplexGame` initializes and cleans them up.
+
+## Built-in Mineplex Studio Game Mechanics
 The Studio SDK comes with extensive built-in Game Mechanics that provide foundational functionality for all Studio
 projects. These built-in Game Mechanics are automatically registered, and can be accessed via
 the `MineplexGameMechanicFactory` method `construct(Class<T extends GameMechanic<? extends MineplexGame>)`
 
-## Pricing
+### Pricing
 
 Built-in mechanics are provided free-of-charge!
 
+## Custom Game Mechanics
+
+Implementing your own custom `GameMechanic`s is easy to do: just create a new class that implements the `GameMechanic`
+interface, and determine if you want a mechanic that is coupled to a game, for example `BossMechanic<BossGame>`, or a
+more generic mechanic, such as `SpectatorMechanic<MineplexGame>`. In your custom class, you will need to implement
+the `setup(Game)`, `teardown()`, and `onStateChange(GameState, GameState) - todo: what is this` methods to define the custom behavior of your
+mechanic for each of those cases.
+
+Let's try making a custom `GameMechanic` that makes players glow for a moment when they get hit.
+
+ ```java
+@AllArgsConstructor
+public class DamageGlowMechanic implements GameMechanic<MineplexGame> {
+    private final MineplexGame game;
+    private final JavaPlugin myProjectPlugin;
+
+    @Override
+    public void setup(final MineplexGame game) {
+        Bukkit.getPluginManager().registerEvents(this, myProjectPlugin);
+    }
+
+    @Override
+    public void teardown() {
+        HandlerList.unregisterAll(this);
+    }
+
+    @Override
+    public void onStateChange(final GameState fromState, final GameState toState) {
+        // Nothing needs to be cleaned up on state change
+    }
+
+    // On damage, make players glow
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDamage(final EntityDamageEvent event) {
+        if (event.getEntity() instanceof Player player) {
+            // If the game is ongoing
+            if (game.getGameState() == GameState.STARTED) {
+                // If the player taking damage is in the game
+                if (game.getPlayers().contains(player)) {
+                    // Make them glow for a bit
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING,
+                            // 5 seconds * 20 ticks per second
+                            5 * 20,
+                            // No need for a higher level of glowing
+                            0,
+                            // Not an ambient effect
+                            false,
+                            // No need for particles
+                            false,
+                            // No need for the potion effect icon
+                            false));
+                }
+            }
+        }
+    }
+}
+ ```
+
+## Game Mechanic Factory
+
+A `GameMechanicFactory` provides for the dynamic construction of instances of a specific `GameMechanic`.
+To function, the factory needs to be registered in the `MineplexGameMechanicFactory`
+using the `<M extends GameMechanic<?>> register(Class<M> gameMechanic, Supplier<M> mechanicSupplier)` method.
+Once the factory has been registered, you can use the `MineplexGameMechanicFactory`
+to construct instances of the `GameMechanic` using the `construct(Class<M extends GameMechanic<?>>)` method.
+All built-in `GameMechanic`s that we provide have their factories pre-registered in the `MineplexGameMechanicFactory`,
+so all you have to do is construct an instance when you want to use them.
+You do not need to create a `GameMechanicFactory` for your own custom `GameMechanic`s, but you can if you'd like to.
+You will need
+to implement your own `GameMechanicFactory` if you plan to sell source-unavailable `GameMechanic`s to other developers
+on our asset marketplace.
+
+### Example
+
+Let's register and construct the mechanic we just implemented above:
+
+```java
+
+public class ExampleGame implements MineplexGame {
+    private final MineplexGameMechanicFactory gameMechanicFactory =
+            MineplexModuleManager.getRegisteredModule(MineplexGameMechanicFactory.class);
+
+    private DamageGlowMechanic damageGlowMechanic;
+
+    @Override
+    public void setup() {
+        // Register mechanic supplier to be used for construction
+        this.gameMechanicFactory.register(DamageGlowMechanic.class, DamageGlowMechanic::new);
+
+        // Construct new instance of mechanic using registered supplier
+        this.damageGlowMechanic = this.gameMechanicFactory.construct(DamageGlowMechanic.class);
+
+        // Set up freshly created instance!
+        this.damageGlowMechanic.setup(this);
+    }
+
+    @Override
+    public void teardown() {
+        // Don't forget to free any resources this mechanic might've allocated
+        this.damageGlowMechanic.teardown();
+    }
+
+    ...
+}
+
+```
+
 ## Example
 
-Let's say we want to use the `Ability` mechanic in our project. As a very first step, we need to get
+Let's say we want to use the [`Ability`](/docs/sdk/features/game/mechanics/ability) mechanic in our project. As a very first step, we need to get
 a new instance of it.
 
 ```java

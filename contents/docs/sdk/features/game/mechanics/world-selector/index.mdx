@@ -1,0 +1,11 @@
+---
+title: Game World Selector Mechanic
+description: 
+---
+
+### GameWorldSelector Mechanic
+
+The `GameWorldSelectorMechanic` is one of the built-in `GameMechanic`s bundled with the Studio SDK. This mechanic will
+randomly select a map from the game map templates included in your project, load the `MineplexWorld` from the template,
+and then provide it to the `MineplexGame` using the mechanic. Once the `MineplexGame` cleans itself up,
+the `GameWorldSelectorMechanic` will unload the `MineplexWorld` and clean it up as well.
