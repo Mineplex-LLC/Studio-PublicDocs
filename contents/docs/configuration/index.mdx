@@ -142,3 +142,63 @@ There are a set of internal overrides that can be applied to your project by the
   - Changing the default health check interval. This may be useful if your game may be expected to ignore the Health SDK or not respond to it in a timely manner.
 
 If you are interested in enabling these features, please reach out to us via a support request.
+
+---
+
+## Environment Variables
+
+You can define environment variables for your game server using the `environmentVariables` property in your `game-properties.yaml` file. These are key-value pairs that are injected into your server's runtime environment.
+
+```yaml
+environmentVariables:
+  LOG_LEVEL: "debug"
+  FEATURE_FLAG: "true"
+```
+
+### Secret Environment Variables
+
+For sensitive values, use the `secretEnvironmentVariableKeys` property. This is an array of keys referencing environment variables that will be converted to secrets when the project is published.
+
+```yaml
+secretEnvironmentVariableKeys:
+  - DATABASE_PASSWORD
+  - API_KEY
+```
+
+In this example, the publisher script will read the value of `DATABASE_PASSWORD` and `API_KEY` from the local environment and inject them as secrets into the game server's environment. One way to populate these values is by adding them as GitHub repository secrets on the project, then adding them to your GitHub Actions workflow.
+
+## Compute Settings: Internet Access & OpenTelemetry
+
+The `computeSettings` section allows you to control advanced runtime features:
+
+```yaml
+computeSettings:
+  enableInternetAccess: true
+  enableOpenTelemetryAgent: false
+```
+
+- `enableInternetAccess`: Grants your game server outbound internet access. Required for features that need to connect to external services. **Note:** Enabling internet access may have security implications and requires additional review for production publishing. 
+- `enableOpenTelemetryAgent`: Enables the OpenTelemetry Java agent for distributed tracing and observability. Not compatible with the POLAR anticheat. See [OpenTelemetry Java Agent](https://github.com/open-telemetry/opentelemetry-java-instrumentation) for more info.
+
+## POLAR Anticheat Requirements
+
+If you enable the `POLAR` anticheat in your `anticheats` array, you must meet these requirements:
+
+- `dependencies.libraries` must include `PROTOCOLLIB`
+- `computeSettings.enableInternetAccess` must be `true`
+- `computeSettings.enableOpenTelemetryAgent` must **NOT** be `true`
+
+If these requirements are not met, your configuration will be rejected with a validation error.
+
+```yaml
+anticheats:
+  - POLAR
+
+dependencies:
+  libraries:
+    - PROTOCOLLIB
+
+computeSettings:
+  enableInternetAccess: true
+  enableOpenTelemetryAgent: false
+```
